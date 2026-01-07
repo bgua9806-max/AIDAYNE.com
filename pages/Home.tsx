@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Hero } from '../components/Hero';
 import { CategoryBar } from '../components/CategoryBar';
@@ -30,10 +31,10 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          // Merge logic: If DB product has no image, try to find in FALLBACK_PRODUCTS
+          // Merge logic: If DB product has no image, try to find in FALLBACK_PRODUCTS using Safe ID comparison
           const enhancedData = data.map((p: Product) => {
-              if (!p.image || p.image.trim() === '') {
-                  const fallback = FALLBACK_PRODUCTS.find(fp => fp.id === p.id);
+              if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
+                  const fallback = FALLBACK_PRODUCTS.find(fp => String(fp.id) === String(p.id));
                   return fallback ? { ...p, image: fallback.image } : p;
               }
               return p;
@@ -65,7 +66,7 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
       {/* Flash Sale Section */}
       <FlashSale addToCart={addToCart} />
 
-      {/* Best Sellers Section - GRID LAYOUT (Updated) */}
+      {/* Best Sellers Section - GRID LAYOUT */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="flex items-end justify-between mb-8">
           <div>

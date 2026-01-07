@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Clock, ArrowRight, User, Sparkles } from 'lucide-react';
@@ -16,8 +17,21 @@ export const Blog: React.FC = () => {
     const fetchPosts = async () => {
       try {
         const { data, error } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+        
         if (!error && data && data.length > 0) {
-            setPosts(data);
+            // MERGE LOGIC: Nếu ảnh trong DB rỗng, lấy từ FALLBACK_POSTS
+            const enhancedPosts = data.map((post: BlogPost) => {
+                if (!post.image || post.image.trim() === '') {
+                    // Tìm bài viết tương ứng trong file constants (so sánh ID dạng chuỗi)
+                    const fallback = FALLBACK_POSTS.find(fp => String(fp.id) === String(post.id));
+                    // Nếu tìm thấy fallback thì dùng ảnh fallback, không thì dùng placeholder
+                    return fallback 
+                        ? { ...post, image: fallback.image } 
+                        : { ...post, image: 'https://placehold.co/1200x600?text=No+Image' };
+                }
+                return post;
+            });
+            setPosts(enhancedPosts);
         } else {
             setPosts(FALLBACK_POSTS);
         }
@@ -61,7 +75,7 @@ export const Blog: React.FC = () => {
             <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-soft border border-white/50 hover:shadow-2xl transition-all duration-500 grid grid-cols-1 md:grid-cols-2 relative z-10">
               <div className="relative overflow-hidden aspect-[16/10] md:aspect-auto h-full">
                 <img 
-                  src={featuredPost.image} 
+                  src={featuredPost.image || 'https://placehold.co/1200x600?text=No+Image'} 
                   alt={featuredPost.title} 
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out" 
                 />
@@ -110,7 +124,7 @@ export const Blog: React.FC = () => {
             <Link key={post.id} to={`/blog/${post.id}`} className="group flex flex-col bg-white rounded-[2rem] overflow-hidden shadow-sm border border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
               <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
                 <img 
-                  src={post.image} 
+                  src={post.image || 'https://placehold.co/800x600?text=No+Image'} 
                   alt={post.title} 
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                 />

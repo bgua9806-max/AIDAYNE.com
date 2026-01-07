@@ -1,13 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
-import { PRODUCTS } from '../constants';
+import { PRODUCTS, BLOG_POSTS } from '../constants';
 import { Product, BlogPost as BlogPostType } from '../types';
 import { 
   ArrowLeft, Clock, Calendar, Facebook, Twitter, 
   Link as LinkIcon, ChevronRight, User, ShoppingCart, Zap, Star
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { ProductCard } from '../components/ProductCard';
 
 const { useParams, Link } = ReactRouterDOM;
 
@@ -30,44 +31,76 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
         const { data: blogData } = await supabase.from('blogs').select('*').eq('id', id).single();
         
         if (blogData) {
-            setPost(blogData);
+            // Logic fallback ảnh cho CHÍNH BÀI VIẾT (Fix lỗi ảnh bìa bị mất)
+            let enrichedPost = blogData;
+            if (!enrichedPost.image || enrichedPost.image.trim() === '') {
+                 const fallback = BLOG_POSTS.find(p => String(p.id) === String(enrichedPost.id));
+                 if (fallback) {
+                    enrichedPost = { ...enrichedPost, image: fallback.image };
+                 } else {
+                    enrichedPost = { ...enrichedPost, image: 'https://placehold.co/1200x600?text=No+Cover+Image' };
+                 }
+            }
+            setPost(enrichedPost);
             
-            // 2. Logic lấy danh sách sản phẩm đề xuất (4 sản phẩm)
+            // 2. Logic lấy danh sách sản phẩm đề xuất
             let productsToShow: Product[] = [];
 
+            // Mapping danh mục thông minh hơn
             const mapCategory: {[key: string]: string} = {
                 'Công nghệ AI': 'ai',
                 'Thủ thuật': 'work',
                 'Đánh giá': 'entertainment',
-                'Bảo mật': 'security'
+                'Bảo mật': 'security',
+                'Thiết kế': 'design',
+                'Tin tức': 'ai'
             };
             
-            const targetCategory = mapCategory[blogData.category] || 'software';
+            let targetCategory = mapCategory[blogData.category] || 'work';
+            
+            if (blogData.category === 'Thủ thuật' && (blogData.title.toLowerCase().includes('canva') || blogData.title.toLowerCase().includes('thiết kế'))) {
+                targetCategory = 'design';
+            }
 
             // Fetch từ DB
-            const { data: relatedDb } = await supabase
+            const { data: relatedDb, error } = await supabase
                 .from('products')
                 .select('*')
                 .eq('category', targetCategory)
                 .limit(4);
 
-            if (relatedDb && relatedDb.length > 0) {
-                 productsToShow = relatedDb;
+            if (!error) {
+                 // KẾT NỐI DB THÀNH CÔNG
+                 if (relatedDb && relatedDb.length > 0) {
+                     productsToShow = relatedDb;
+                 } else {
+                     // Nếu category này không có sản phẩm (do đã xóa hết), thử tìm sản phẩm HOT trong DB để lấp chỗ trống
+                     const { data: hotDb } = await supabase.from('products').select('*').eq('isHot', true).limit(4);
+                     // Nếu hotDb có thì dùng, không thì để trống. TUYỆT ĐỐI KHÔNG dùng PRODUCTS (constants)
+                     productsToShow = hotDb || [];
+                 }
             } else {
-                 // Fallback
+                 // CHỈ Fallback khi có LỖI KẾT NỐI DB thực sự
                  productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 4);
             }
             
-            // Xử lý ảnh fallback
+            // Xử lý ảnh fallback cho sản phẩm đề xuất (chỉ xử lý ảnh, không phục hồi sản phẩm đã xóa)
             const enhancedProducts = productsToShow.map(p => {
-                if (!p.image) {
-                     const fallback = PRODUCTS.find(fp => fp.id === p.id);
-                     return fallback ? { ...p, image: fallback.image } : { ...p, image: 'https://via.placeholder.com/150' };
+                if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
+                     const fallback = PRODUCTS.find(fp => String(fp.id) === String(p.id));
+                     return fallback ? { ...p, image: fallback.image } : { ...p, image: 'https://placehold.co/400x400?text=No+Image' };
                 }
                 return p;
             });
 
             setRecommendedProducts(enhancedProducts);
+        } else {
+            // Trường hợp bài viết không tồn tại trong DB, fallback toàn bộ
+            const fallbackPost = BLOG_POSTS.find(p => String(p.id) === id);
+            if (fallbackPost) {
+                setPost(fallbackPost);
+                setRecommendedProducts(PRODUCTS.slice(0, 4));
+            }
         }
     };
     fetchPostAndRecommendations();
@@ -87,7 +120,6 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
     return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium">Đang tải bài viết...</div>;
   }
 
-  // --- SMART CONTENT RENDERER ---
   const renderContent = (content: string) => {
     if (!content) return null;
     return (
@@ -152,7 +184,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
          {/* Hero Image */}
          <div className="relative w-full aspect-[21/9] rounded-[2rem] overflow-hidden shadow-2xl shadow-gray-200 group border-[4px] border-white animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             <img 
-              src={post.image || 'https://via.placeholder.com/800x400?text=No+Cover+Image'} 
+              src={post.image || 'https://placehold.co/1200x600?text=No+Cover+Image'} 
               alt={post.title} 
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
             />
@@ -184,9 +216,8 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
               </div>
            </div>
 
-           {/* MAIN ARTICLE CONTENT (Expanded to center) */}
+           {/* MAIN ARTICLE CONTENT */}
            <div className="lg:col-span-10 lg:col-start-2 xl:col-span-8 xl:col-start-3">
-              {/* Styling for inserted HTML content */}
               <style>{`
                 .blog-content h2 { font-size: 1.75rem; font-weight: 800; color: #111; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
                 .blog-content h3 { font-size: 1.4rem; font-weight: 700; color: #333; margin-top: 2rem; margin-bottom: 0.75rem; }
@@ -227,84 +258,50 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
         </div>
       </div>
 
-      {/* RECOMMENDED TOOLS SECTION - BOTTOM (Clean Apple Style) */}
-      <section className="mt-24 border-t border-gray-200 pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-10">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Zap size={20} strokeWidth={2.5} />
+      {/* RECOMMENDED TOOLS SECTION */}
+      {recommendedProducts.length > 0 && (
+        <section className="mt-24 border-t border-gray-200 pt-16 pb-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center gap-3 mb-10">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <Zap size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Công cụ được đề xuất</h2>
+                        <p className="text-gray-500 text-sm mt-1">Các phần mềm hỗ trợ tốt nhất cho chủ đề này</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Công cụ được đề xuất</h2>
-                    <p className="text-gray-500 text-sm mt-1">Các phần mềm hỗ trợ tốt nhất cho chủ đề này</p>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {recommendedProducts.map((prod) => (
-                    <div key={prod.id} className="group bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
-                        {/* Image */}
-                        <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 mb-4 border border-gray-50">
-                            <img src={prod.image} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            {prod.discount > 0 && (
-                                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md">
-                                    -{prod.discount}%
-                                </div>
-                            )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {recommendedProducts.map((prod) => (
+                        <ProductCard key={prod.id} product={prod} onAddToCart={addToCart} />
+                    ))}
+                </div>
+
+                <div className="mt-16 bg-black rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div className="text-center md:text-left">
+                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Đăng ký nhận tin AIDAYNE</h3>
+                            <p className="text-gray-400">Nhận thông báo về các công cụ AI mới nhất và mã giảm giá độc quyền.</p>
                         </div>
-
-                        {/* Info */}
-                        <div className="flex-1 flex flex-col">
-                            <h3 className="font-bold text-gray-900 text-base leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-                                {prod.name}
-                            </h3>
-                            
-                            <div className="mt-auto flex items-end justify-between">
-                                <div>
-                                    <div className="text-xs text-gray-400 line-through font-medium">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(prod.originalPrice)}
-                                    </div>
-                                    <div className="text-lg font-extrabold text-primary">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(prod.price)}
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => addToCart(prod)}
-                                    className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white transition-all shadow-sm hover:scale-110 active:scale-95"
-                                    title="Thêm vào giỏ"
-                                >
-                                    <ShoppingCart size={18} strokeWidth={2.5} />
+                        <div className="w-full md:w-auto min-w-[320px]">
+                            <div className="relative">
+                                <input 
+                                    type="email" 
+                                    placeholder="Email của bạn..." 
+                                    className="w-full pl-5 pr-14 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:bg-white/20 transition-all font-medium backdrop-blur-md"
+                                />
+                                <button className="absolute right-2 top-2 bottom-2 w-10 bg-white text-black rounded-xl flex items-center justify-center hover:scale-105 transition-transform">
+                                    <ChevronRight size={20} />
                                 </button>
                             </div>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* Newsletter Banner - Integrated at bottom */}
-            <div className="mt-16 bg-black rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="text-center md:text-left">
-                        <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Đăng ký nhận tin AIDAYNE</h3>
-                        <p className="text-gray-400">Nhận thông báo về các công cụ AI mới nhất và mã giảm giá độc quyền.</p>
-                    </div>
-                    <div className="w-full md:w-auto min-w-[320px]">
-                        <div className="relative">
-                            <input 
-                                type="email" 
-                                placeholder="Email của bạn..." 
-                                className="w-full pl-5 pr-14 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:bg-white/20 transition-all font-medium backdrop-blur-md"
-                            />
-                            <button className="absolute right-2 top-2 bottom-2 w-10 bg-white text-black rounded-xl flex items-center justify-center hover:scale-105 transition-transform">
-                                <ChevronRight size={20} />
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
-        </div>
-      </section>
+        </section>
+      )}
 
     </main>
   );

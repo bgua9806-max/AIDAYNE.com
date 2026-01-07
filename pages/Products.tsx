@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { PRODUCTS as FALLBACK_PRODUCTS, CATEGORIES } from '../constants';
@@ -44,10 +45,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-            // Merge logic
+            // Merge logic with Safe ID Comparison
             const enhancedData = data.map((p: Product) => {
-                if (!p.image || p.image.trim() === '') {
-                    const fallback = FALLBACK_PRODUCTS.find(fp => fp.id === p.id);
+                if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
+                    const fallback = FALLBACK_PRODUCTS.find(fp => String(fp.id) === String(p.id));
                     return fallback ? { ...p, image: fallback.image } : p;
                 }
                 return p;

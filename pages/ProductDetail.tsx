@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product, Variant } from '../types';
@@ -24,9 +25,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'features' | 'reviews'>('info');
   const [mainImageSrc, setMainImageSrc] = useState<string>('');
 
+  // Helper function: An toàn xử lý ảnh fallback
   const fillImage = (p: Product) => {
-      if (!p.image || p.image.trim() === '') {
-          const fallback = FALLBACK_PRODUCTS.find(fp => fp.id === p.id);
+      if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
+          // So sánh ID dạng chuỗi để tránh lỗi lệch kiểu (number vs string)
+          const fallback = FALLBACK_PRODUCTS.find(fp => String(fp.id) === String(p.id));
           return fallback ? { ...p, image: fallback.image } : { ...p, image: 'https://placehold.co/600x400?text=No+Image' };
       }
       return p;
@@ -45,7 +48,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
         if (!error && dbData) {
            currentProduct = fillImage(dbData);
         } else {
-           const found = FALLBACK_PRODUCTS.find(p => p.id === id);
+           // Nếu lỗi DB, thử tìm trong Constants (nhưng nếu sản phẩm đã bị xóa khỏi DB và ta muốn ẩn thì logic này có thể vẫn hiện nó nếu nó nằm trong constants. Tuy nhiên, ở trang chi tiết nếu người dùng vào direct link, ta vẫn có thể fallback để tránh lỗi trang 404 xấu)
+           const found = FALLBACK_PRODUCTS.find(p => String(p.id) === String(id));
            if (found) {
                currentProduct = found;
            }
@@ -60,20 +64,38 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
              }
 
              // 2. Fetch Related Products from DB
-             const { data: relatedData } = await supabase
+             const { data: relatedData, error: relatedError } = await supabase
                  .from('products')
                  .select('*')
                  .eq('category', currentProduct.category)
                  .neq('id', currentProduct.id)
                  .limit(4);
              
-             if (relatedData && relatedData.length > 0) {
-                 const filledRelated = relatedData.map(fillImage);
-                 setRelatedProducts(filledRelated);
+             if (!relatedError) {
+                 // DB Connection OK
+                 if (relatedData && relatedData.length > 0) {
+                     const filledRelated = relatedData.map(fillImage);
+                     setRelatedProducts(filledRelated);
+                 } else {
+                     // Nếu không có sản phẩm liên quan (do đã xóa hết), thử lấy HOT products từ DB
+                     // Thay vì fallback về FALLBACK_PRODUCTS (chứa sản phẩm cũ)
+                     const { data: hotDb } = await supabase
+                        .from('products')
+                        .select('*')
+                        .eq('isHot', true)
+                        .neq('id', currentProduct.id)
+                        .limit(4);
+                     
+                     if (hotDb) {
+                         setRelatedProducts(hotDb.map(fillImage));
+                     } else {
+                         setRelatedProducts([]);
+                     }
+                 }
              } else {
-                 // Fallback to constants if DB returns empty related
+                 // Chỉ fallback về constants nếu lỗi kết nối DB
                  const fallbackRelated = FALLBACK_PRODUCTS
-                     .filter(p => p.category === currentProduct!.category && p.id !== currentProduct!.id)
+                     .filter(p => p.category === currentProduct!.category && String(p.id) !== String(currentProduct!.id))
                      .slice(0, 4);
                  setRelatedProducts(fallbackRelated);
              }
@@ -129,12 +151,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
            {/* LEFT: Sticky Image */}
            <div className="lg:col-span-7">
               <div className="sticky top-32 space-y-6">
-                 <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-white shadow-soft border border-gray-100">
+                 <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-white shadow-soft border border-gray-100 group">
                     <img 
                       src={mainImageSrc} 
                       alt={product.name} 
                       onError={handleImageError}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                     />
                  </div>
                  
