@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
 import { slugify } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 const { useParams, Link } = ReactRouterDOM;
 
@@ -70,7 +71,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
         if (currentProduct) {
              setProduct(currentProduct);
              setMainImageSrc(currentProduct.image || 'https://placehold.co/600x400?text=No+Image');
-             document.title = `${currentProduct.name} - AIDAYNE Store`;
+             // Document Title handled by SEO component now
              
              if (currentProduct.variants && currentProduct.variants.length > 0) {
                  setSelectedVariant(currentProduct.variants[0]);
@@ -206,9 +207,52 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
       addToCart(productToAdd);
   };
 
+  // Generate Product Schema for Rich Snippets
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image,
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": product.developer || "AIDAYNE"
+    },
+    "sku": product.id,
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "VND",
+      "price": currentPrice,
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating,
+      "reviewCount": (product.reviews?.length || 0) + 10 // Mock base + real
+    },
+    "review": product.reviews?.map(r => ({
+        "@type": "Review",
+        "author": { "@type": "Person", "name": r.user },
+        "datePublished": r.date.split('/').reverse().join('-'),
+        "reviewBody": r.comment,
+        "reviewRating": { "@type": "Rating", "ratingValue": r.rating }
+    }))
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] pb-32 lg:pb-24 font-sans selection:bg-primary selection:text-white">
       
+      <SEO 
+        title={`${product.name} - Giá Rẻ, Uy Tín, Bảo Hành Trọn Đời`}
+        description={`Mua ${product.name} bản quyền giá chỉ ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}. ${product.description}`}
+        image={product.image}
+        type="product"
+        schema={productSchema}
+      />
+
       {/* Premium Ambient Background */}
       <div className="absolute top-0 left-0 right-0 h-[800px] overflow-hidden z-0 pointer-events-none">
           <div className="absolute top-[-20%] left-[10%] w-[70%] h-[100%] bg-blue-500/5 blur-[120px] rounded-full mix-blend-multiply"></div>

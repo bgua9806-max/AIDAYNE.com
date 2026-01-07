@@ -131,20 +131,6 @@ export const Contact: React.FC = () => {
                    </div>
                 </div>
              </div>
-
-             {/* Map Placeholder */}
-             <div className="bg-gray-200 rounded-[2rem] overflow-hidden h-64 shadow-sm relative group">
-                <img 
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&auto=format&fit=crop&q=80" 
-                  alt="Map" 
-                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                   <button className="bg-white text-gray-900 font-bold py-2 px-6 rounded-full shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                      <MapPin size={18} className="text-primary" /> Xem bản đồ
-                   </button>
-                </div>
-             </div>
           </div>
 
           {/* Right Column: Contact Form */}

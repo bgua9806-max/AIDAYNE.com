@@ -9,6 +9,7 @@ import { Product } from '../types';
 import { ArrowRight } from 'lucide-react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { SEO } from '../components/SEO';
 
 const { Link } = ReactRouterDOM;
 
@@ -64,8 +65,28 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
   
   const newProducts = products.filter(p => p.isNew || (typeof p.id === 'string' && parseInt(p.id) > 8));
 
+  const homeSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AIDAYNE.com",
+    "url": window.location.origin,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${window.location.origin}/products?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#F2F2F7] pb-24">
+      <SEO 
+        title="AIDAYNE.com - Bản Quyền Phần Mềm & AI Tools Giá Rẻ" 
+        description="Mua bản quyền ChatGPT Plus, Netflix, Youtube Premium, Adobe, Windows, Office giá rẻ, bảo hành trọn đời. Uy tín, giao hàng tự động 24/7."
+        schema={homeSchema}
+      />
       <Hero />
       <CategoryBar />
       

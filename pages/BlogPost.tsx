@@ -10,6 +10,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { ProductCard } from '../components/ProductCard';
 import { slugify } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 const { useParams, Link } = ReactRouterDOM;
 
@@ -61,7 +62,6 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                  }
             }
             setPost(enrichedPost);
-            document.title = `${enrichedPost.title} - AIDAYNE Blog`; // SEO Title
             
             // 2. Logic lấy danh sách sản phẩm đề xuất
             let productsToShow: Product[] = [];
@@ -115,7 +115,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
             setRecommendedProducts(enhancedProducts);
         } else {
-            document.title = "Bài viết không tồn tại - AIDAYNE Blog";
+            // Error handled in rendering
         }
     };
     fetchPostAndRecommendations();
@@ -145,9 +145,37 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
     );
   };
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "image": post.image,
+    "author": {
+      "@type": "Person",
+      "name": post.author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "AIDAYNE",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://placehold.co/600x60?text=AIDAYNE+LOGO"
+      }
+    },
+    "datePublished": post.date.split('/').reverse().join('-')
+  };
+
   return (
     <main className="min-h-screen bg-[#F5F5F7] pb-20 relative font-sans selection:bg-primary selection:text-white">
       
+      <SEO 
+        title={post.title}
+        description={post.excerpt}
+        image={post.image}
+        type="article"
+        schema={articleSchema}
+      />
+
       {/* Reading Progress Bar */}
       <div className="fixed top-0 left-0 h-1 bg-gray-200 z-[60] w-full">
         <div 

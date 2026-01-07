@@ -6,6 +6,7 @@ import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { slugify } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 const { Link, useLocation, useNavigate } = ReactRouterDOM;
 
@@ -23,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchSource, setSearchSource] = useState<Product[]>([]); // Store fetched products
   const searchRef = useRef<HTMLDivElement>(null);
 
   const location = useLocation();
@@ -43,6 +45,29 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     window.addEventListener('scroll', handleScroll);
     document.addEventListener('mousedown', handleClickOutside);
     
+    // Fetch live products for search suggestions
+    const fetchSearchData = async () => {
+        try {
+            const { data } = await supabase.from('products').select('*');
+            if (data && data.length > 0) {
+                // Map to handle missing images if any, using fallback logic
+                const mapped = data.map((p: any) => {
+                    if (!p.image) {
+                        const fallback = PRODUCTS.find(fp => String(fp.id) === String(p.id));
+                        return { ...p, image: fallback?.image || 'https://placehold.co/100?text=No+Img' };
+                    }
+                    return p;
+                });
+                setSearchSource(mapped);
+            } else {
+                setSearchSource(PRODUCTS); // Fallback if DB empty (optional, but safer)
+            }
+        } catch (e) {
+            setSearchSource(PRODUCTS);
+        }
+    };
+    fetchSearchData();
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -56,11 +81,14 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     setSearchQuery(query);
 
     if (query.trim().length > 0) {
-      const lowerQuery = query.toLowerCase();
-      const filtered = PRODUCTS.filter(product => 
-        product.name.toLowerCase().includes(lowerQuery) || 
-        product.description.toLowerCase().includes(lowerQuery)
-      ).slice(0, 5);
+      const cleanQuery = slugify(query); // Chuẩn hóa từ khóa tìm kiếm (bỏ dấu)
+      
+      const filtered = searchSource.filter(product => {
+        // Chuẩn hóa tên sản phẩm và tìm kiếm
+        const pName = slugify(product.name);
+        return pName.includes(cleanQuery);
+      }).slice(0, 5);
+      
       setSuggestions(filtered);
       setShowSuggestions(true);
     } else {
@@ -181,7 +209,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                       </div>
                     ) : (
                       <div className="p-4 text-center">
-                        <p className="text-gray-500 text-xs">No results found.</p>
+                        <p className="text-gray-500 text-xs">Không tìm thấy sản phẩm nào.</p>
                       </div>
                     )}
                   </div>

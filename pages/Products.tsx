@@ -6,6 +6,8 @@ import { Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
 import { Filter, ChevronDown, SlidersHorizontal, X, ArrowUpDown, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { SEO } from '../components/SEO';
+import { slugify } from '../lib/utils';
 
 const { useLocation, useNavigate } = ReactRouterDOM;
 
@@ -77,21 +79,32 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    // Filter by Category
+    // 1. Filter by Category FIRST (Strict Scope)
     if (selectedCategory !== 'all') {
       result = result.filter(p => p.category === selectedCategory);
     }
 
-    // Filter by Search
-    if (searchQuery) {
-        const lowerQ = searchQuery.toLowerCase();
-        result = result.filter(p => p.name.toLowerCase().includes(lowerQ) || p.description.toLowerCase().includes(lowerQ));
+    // 2. Filter by Search (Smart Search with Vietnamese support)
+    // "Chính xác" logic: Normalizes strings (removes accents) and splits query into tokens.
+    // All tokens must exist in the product name/description/category.
+    if (searchQuery && searchQuery.trim().length > 0) {
+        const cleanQuery = slugify(searchQuery);
+        // Split query into keywords (e.g. "tai-khoan-netflix" -> ["tai", "khoan", "netflix"])
+        const queryTokens = cleanQuery.split('-').filter(t => t.length > 0);
+
+        result = result.filter(p => {
+            // Combine fields to search within
+            const productContent = slugify(`${p.name} ${p.description} ${p.category}`);
+            
+            // Check if every token in the query appears in the product content
+            return queryTokens.every(token => productContent.includes(token));
+        });
     }
 
-    // Filter by Price
+    // 3. Filter by Price
     result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
-    // Sort
+    // 4. Sort
     switch (sortBy) {
       case 'price-asc':
         return [...result].sort((a, b) => a.price - b.price);
@@ -124,9 +137,16 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
     navigate('/products');
   };
 
+  const currentCategoryName = CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Cửa hàng';
+
   return (
     <main className="min-h-screen bg-[#F2F2F7] pt-28 pb-20">
       
+      <SEO 
+        title={selectedCategory === 'all' ? "Tất cả sản phẩm - AIDAYNE Store" : `Mua ${currentCategoryName} bản quyền giá rẻ`}
+        description={`Danh sách các sản phẩm ${currentCategoryName} tốt nhất. Bảo hành trọn đời, giá rẻ hơn gốc đến 70%.`}
+      />
+
       {/* Header */}
       <div className="bg-white border-b border-gray-100 mb-8 sticky top-[70px] z-30 shadow-sm backdrop-blur-xl bg-white/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -176,6 +196,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
           
           {/* Sidebar Filters (Desktop) */}
           <aside className="hidden lg:block w-64 flex-shrink-0 space-y-8">
+            {/* Search Input in Sidebar for convenience */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Search size={18} /> Tìm kiếm
+               </h3>
+               <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nhập tên sản phẩm..."
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+               />
+            </div>
+
             {/* Categories */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -252,7 +286,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
                      <Search size={32} />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
-                  <p className="text-gray-500 mb-6">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn.</p>
+                  <p className="text-gray-500 mb-6">
+                    {selectedCategory !== 'all' 
+                        ? `Không có kết quả cho "${searchQuery}" trong danh mục "${currentCategoryName}".` 
+                        : "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn."}
+                  </p>
                   <button onClick={clearFilters} className="px-6 py-2 bg-primary text-white rounded-full font-bold text-sm shadow-lg shadow-red-500/20">
                     Xóa bộ lọc
                   </button>
@@ -276,6 +314,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ addToCart }) => {
              </div>
              
              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                <div>
+                   <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider">Từ khóa</h4>
+                   <input 
+                      type="text" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm kiếm..."
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                   />
+                </div>
+
                 <div>
                   <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider">Danh mục</h4>
                   <div className="flex flex-wrap gap-2">
