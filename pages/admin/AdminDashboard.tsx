@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowUpRight, ArrowDownRight, Package } from 'lucide-react';
+import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowUpRight, ArrowDownRight, Package, Activity, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const StatCard = ({ title, value, trend, trendValue, icon: Icon, color, loading }: any) => (
@@ -32,38 +33,83 @@ export const AdminDashboard: React.FC = () => {
     blogs: 0
   });
   const [loading, setLoading] = useState(true);
+  const [lastHeartbeat, setLastHeartbeat] = useState<string | null>(null);
+  const [pinging, setPinging] = useState(false);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      // Parallel fetching for maximum speed (mili-seconds load)
+      const [ordersRes, productsRes, blogsRes, heartbeatRes] = await Promise.all([
+        supabase.from('orders').select('total', { count: 'exact' }),
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('blogs').select('id', { count: 'exact', head: true }),
+        supabase.from('keep_alive').select('created_at').order('created_at', { ascending: false }).limit(1)
+      ]);
+
+      // Calculate Revenue manually from orders
+      const totalRevenue = ordersRes.data?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+
+      setStats({
+        revenue: totalRevenue,
+        orders: ordersRes.count || 0,
+        products: productsRes.count || 0,
+        blogs: blogsRes.count || 0
+      });
+
+      if (heartbeatRes.data && heartbeatRes.data.length > 0) {
+          setLastHeartbeat(new Date(heartbeatRes.data[0].created_at).toLocaleString('vi-VN'));
+      }
+    } catch (error) {
+      console.error("Dashboard load error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Parallel fetching for maximum speed (mili-seconds load)
-        const [ordersRes, productsRes, blogsRes] = await Promise.all([
-          supabase.from('orders').select('total', { count: 'exact' }),
-          supabase.from('products').select('id', { count: 'exact', head: true }),
-          supabase.from('blogs').select('id', { count: 'exact', head: true })
-        ]);
-
-        // Calculate Revenue manually from orders
-        const totalRevenue = ordersRes.data?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
-
-        setStats({
-          revenue: totalRevenue,
-          orders: ordersRes.count || 0,
-          products: productsRes.count || 0,
-          blogs: blogsRes.count || 0
-        });
-      } catch (error) {
-        console.error("Dashboard load error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
   }, []);
 
+  const handleManualPing = async () => {
+      setPinging(true);
+      try {
+          await supabase.from('keep_alive').insert({});
+          await fetchStats();
+      } catch (e) {
+          alert("Lỗi khi ping: " + e);
+      } finally {
+          setPinging(false);
+      }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
+      
+      {/* System Status Banner */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center border border-green-500/30">
+                  <Activity className="text-green-400" size={28} />
+              </div>
+              <div>
+                  <h3 className="text-lg font-bold">Hệ thống Anti-Pause hoạt động</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-300 mt-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                      <span>Lần cập nhật Database cuối: <span className="text-white font-mono font-bold">{lastHeartbeat || 'Chưa ghi nhận'}</span></span>
+                  </div>
+              </div>
+          </div>
+          <button 
+            onClick={handleManualPing}
+            disabled={pinging}
+            className="px-5 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border border-white/10"
+          >
+             <RefreshCw size={16} className={pinging ? 'animate-spin' : ''} /> 
+             {pinging ? 'Đang cập nhật...' : 'Cập nhật thủ công'}
+          </button>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 

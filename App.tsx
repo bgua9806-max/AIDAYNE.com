@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -16,6 +16,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { ChatBot } from './components/ChatBot';
 import { Product, CartItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { supabase } from './lib/supabase';
 
 // Admin Imports
 import { AdminLayout } from './components/layouts/AdminLayout';
@@ -34,6 +35,53 @@ const { HashRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
 function AppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // --- AUTOMATIC SUPABASE KEEP-ALIVE MECHANISM ---
+  useEffect(() => {
+    const runKeepAlive = async () => {
+      try {
+        // 1. Check the last heartbeat
+        const { data, error } = await supabase
+          .from('keep_alive')
+          .select('created_at')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const now = new Date();
+        let shouldPing = false;
+
+        if (error || !data || data.length === 0) {
+          // If table is empty or error (table might create first time), try to ping
+          shouldPing = true;
+        } else {
+          const lastPing = new Date(data[0].created_at);
+          const diffTime = Math.abs(now.getTime() - lastPing.getTime());
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          
+          // Only ping if last ping was more than 2.5 days ago (safety buffer for 3 days)
+          if (diffDays >= 2.5) {
+            shouldPing = true;
+          }
+        }
+
+        // 2. Perform Ping (Insert) if needed
+        if (shouldPing) {
+          console.log("🛡️ System Heartbeat: Sending keep-alive signal to Supabase...");
+          await supabase.from('keep_alive').insert({});
+          
+          // 3. Cleanup: Remove rows older than 30 days to keep table light
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          await supabase.from('keep_alive').delete().lt('created_at', thirtyDaysAgo.toISOString());
+        }
+      } catch (err) {
+        // Silent fail to not disrupt user experience
+        console.warn("Heartbeat check failed (Active only if 'keep_alive' table exists).");
+      }
+    };
+
+    runKeepAlive();
+  }, []);
+  // ----------------------------------------------
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -79,7 +127,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           
-          {/* Admin Routes - No longer Protected for development */}
+          {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
              <Route index element={<Navigate to="dashboard" replace />} />
              <Route path="dashboard" element={<AdminDashboard />} />
