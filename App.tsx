@@ -27,8 +27,9 @@ import { AdminPromotions } from './pages/admin/AdminPromotions';
 import { AdminFlashSale } from './pages/admin/AdminFlashSale';
 import { AdminCustomers } from './pages/admin/AdminCustomers';
 import { AdminHero } from './pages/admin/AdminHero';
+import { AdminReviews } from './pages/admin/AdminReviews';
 
-const { BrowserRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
+const { HashRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
 
 function AppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -83,6 +84,7 @@ function AppContent() {
              <Route index element={<Navigate to="dashboard" replace />} />
              <Route path="dashboard" element={<AdminDashboard />} />
              <Route path="products" element={<AdminProducts />} />
+             <Route path="reviews" element={<AdminReviews />} />
              <Route path="orders" element={<AdminOrders />} />
              <Route path="flash-sale" element={<AdminFlashSale />} />
              <Route path="promotions" element={<AdminPromotions />} />

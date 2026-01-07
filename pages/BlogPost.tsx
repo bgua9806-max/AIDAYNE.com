@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ProductCard } from '../components/ProductCard';
+import { slugify } from '../lib/utils';
 
 const { useParams, Link } = ReactRouterDOM;
 
@@ -17,7 +18,8 @@ interface BlogPostProps {
 }
 
 export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
-  const { id } = useParams<{ id: string }>();
+  // id bây giờ có thể là slug
+  const { id: paramSlug } = useParams<{ id: string }>();
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -25,14 +27,31 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchPostAndRecommendations = async () => {
-        if (!id) return;
+        if (!paramSlug) return;
         
-        // 1. Fetch Blog Post
-        const { data: blogData } = await supabase.from('blogs').select('*').eq('id', id).single();
+        let foundPost: BlogPostType | null = null;
+
+        // 1. Fetch Blog Post (Try Slug Match First in DB)
+        const { data: allBlogs } = await supabase.from('blogs').select('*');
         
-        if (blogData) {
+        if (allBlogs) {
+            foundPost = allBlogs.find((b: BlogPostType) => {
+                const bSlug = b.slug || slugify(b.title);
+                return bSlug === paramSlug || String(b.id) === paramSlug;
+            }) || null;
+        }
+
+        // 2. Fallback to constant if not in DB
+        if (!foundPost) {
+            foundPost = BLOG_POSTS.find(p => {
+                const pSlug = slugify(p.title);
+                return pSlug === paramSlug || String(p.id) === paramSlug;
+            }) || null;
+        }
+        
+        if (foundPost) {
             // Logic fallback ảnh cho CHÍNH BÀI VIẾT (Fix lỗi ảnh bìa bị mất)
-            let enrichedPost = blogData;
+            let enrichedPost = foundPost;
             if (!enrichedPost.image || enrichedPost.image.trim() === '') {
                  const fallback = BLOG_POSTS.find(p => String(p.id) === String(enrichedPost.id));
                  if (fallback) {
@@ -42,6 +61,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                  }
             }
             setPost(enrichedPost);
+            document.title = `${enrichedPost.title} - AIDAYNE Blog`; // SEO Title
             
             // 2. Logic lấy danh sách sản phẩm đề xuất
             let productsToShow: Product[] = [];
@@ -56,9 +76,9 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                 'Tin tức': 'ai'
             };
             
-            let targetCategory = mapCategory[blogData.category] || 'work';
+            let targetCategory = mapCategory[enrichedPost.category] || 'work';
             
-            if (blogData.category === 'Thủ thuật' && (blogData.title.toLowerCase().includes('canva') || blogData.title.toLowerCase().includes('thiết kế'))) {
+            if (enrichedPost.category === 'Thủ thuật' && (enrichedPost.title.toLowerCase().includes('canva') || enrichedPost.title.toLowerCase().includes('thiết kế'))) {
                 targetCategory = 'design';
             }
 
@@ -95,12 +115,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
             setRecommendedProducts(enhancedProducts);
         } else {
-            // Trường hợp bài viết không tồn tại trong DB, fallback toàn bộ
-            const fallbackPost = BLOG_POSTS.find(p => String(p.id) === id);
-            if (fallbackPost) {
-                setPost(fallbackPost);
-                setRecommendedProducts(PRODUCTS.slice(0, 4));
-            }
+            document.title = "Bài viết không tồn tại - AIDAYNE Blog";
         }
     };
     fetchPostAndRecommendations();
@@ -114,7 +129,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [id]);
+  }, [paramSlug]);
 
   if (!post) {
     return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium">Đang tải bài viết...</div>;

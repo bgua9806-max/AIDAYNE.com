@@ -5,6 +5,7 @@ import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { slugify } from '../lib/utils';
 
 const { Link, useLocation, useNavigate } = ReactRouterDOM;
 
@@ -68,8 +69,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     }
   };
 
-  const handleSuggestionClick = (productId: string) => {
-    navigate(`/product/${productId}`);
+  const handleSuggestionClick = (product: Product) => {
+    navigate(`/product/${product.slug || slugify(product.name)}`);
     setSearchQuery('');
     setShowSuggestions(false);
   };
@@ -158,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                         {suggestions.map((product) => (
                           <div 
                             key={product.id}
-                            onClick={() => handleSuggestionClick(product.id)}
+                            onClick={() => handleSuggestionClick(product)}
                             className="px-4 py-3 hover:bg-blue-50/50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors"
                           >
                             <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shadow-sm" />

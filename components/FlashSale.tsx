@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Zap, ArrowRight } from 'lucide-react';
 import { Product } from '../types';
 import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../constants';
+import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
@@ -184,7 +186,7 @@ export const FlashSale: React.FC<FlashSaleProps> = ({ addToCart }) => {
                        </div>
                     </div>
                     
-                    <Link to={`/product/${item.product.id}`}>
+                    <Link to={`/product/${item.product.slug || slugify(item.product.name)}`}>
                         <h3 className="font-bold text-gray-900 text-[15px] mb-2 line-clamp-2 h-[42px] leading-snug group-hover:text-primary transition-colors" title={item.product.name}>
                             {item.product.name}
                         </h3>

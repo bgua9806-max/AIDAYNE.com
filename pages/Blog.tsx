@@ -5,6 +5,7 @@ import { Clock, ArrowRight, User, Sparkles } from 'lucide-react';
 import { BlogPost } from '../types';
 import { supabase } from '../lib/supabase';
 import { BLOG_POSTS as FALLBACK_POSTS } from '../constants';
+import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
@@ -71,7 +72,7 @@ export const Blog: React.FC = () => {
         
         {/* Featured Post - Large Card */}
         {featuredPost && (
-          <Link to={`/blog/${featuredPost.id}`} className="group block mb-16">
+          <Link to={`/blog/${featuredPost.slug || slugify(featuredPost.title)}`} className="group block mb-16">
             <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-soft border border-white/50 hover:shadow-2xl transition-all duration-500 grid grid-cols-1 md:grid-cols-2 relative z-10">
               <div className="relative overflow-hidden aspect-[16/10] md:aspect-auto h-full">
                 <img 
@@ -121,7 +122,7 @@ export const Blog: React.FC = () => {
         {/* Regular Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {regularPosts.map((post) => (
-            <Link key={post.id} to={`/blog/${post.id}`} className="group flex flex-col bg-white rounded-[2rem] overflow-hidden shadow-sm border border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
+            <Link key={post.id} to={`/blog/${post.slug || slugify(post.title)}`} className="group flex flex-col bg-white rounded-[2rem] overflow-hidden shadow-sm border border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
               <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
                 <img 
                   src={post.image || 'https://placehold.co/800x600?text=No+Image'} 

@@ -9,6 +9,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
+import { slugify } from '../lib/utils';
 
 const { useParams, Link } = ReactRouterDOM;
 
@@ -17,7 +18,8 @@ interface ProductDetailProps {
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
-  const { id } = useParams<{ id: string }>();
+  // param 'id' bây giờ có thể là slug
+  const { id: paramSlug } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,64 +38,68 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchProductAndRelated = async () => {
-      if (!id) return;
+      if (!paramSlug) return;
       setLoading(true);
       try {
-        // 1. Fetch Main Product
-        const { data: dbData, error } = await supabase.from('products').select('*').eq('id', id).single();
         let currentProduct: Product | null = null;
 
-        if (!error && dbData) {
-           currentProduct = fillImage(dbData);
-        } else {
-           const found = FALLBACK_PRODUCTS.find(p => String(p.id) === String(id));
-           if (found) {
-               currentProduct = found;
-           }
+        // 1. Thử tìm trong DB
+        // Chiến lược: Lấy tất cả sản phẩm (hoặc lọc sơ bộ) rồi match slug ở client
+        // Lý do: DB có thể chưa có cột slug, hoặc slug được tạo động
+        const { data: allProducts, error } = await supabase.from('products').select('*');
+        
+        if (!error && allProducts) {
+            // Tìm sản phẩm khớp Slug hoặc khớp ID
+            currentProduct = allProducts.find((p: Product) => {
+                const pSlug = p.slug || slugify(p.name);
+                return pSlug === paramSlug || String(p.id) === paramSlug;
+            }) || null;
+            
+            if (currentProduct) {
+                currentProduct = fillImage(currentProduct);
+            }
+        }
+
+        // 2. Nếu DB không có, tìm trong Fallback (Dữ liệu mẫu)
+        if (!currentProduct) {
+           currentProduct = FALLBACK_PRODUCTS.find(p => {
+               const pSlug = slugify(p.name);
+               return pSlug === paramSlug || String(p.id) === paramSlug;
+           }) || null;
         }
 
         if (currentProduct) {
              setProduct(currentProduct);
              setMainImageSrc(currentProduct.image || 'https://placehold.co/600x400?text=No+Image');
+             document.title = `${currentProduct.name} - AIDAYNE Store`; // SEO Title
              
              if (currentProduct.variants && currentProduct.variants.length > 0) {
                  setSelectedVariant(currentProduct.variants[0]);
              }
 
-             // 2. Fetch Related Products from DB
-             const { data: relatedData, error: relatedError } = await supabase
-                 .from('products')
-                 .select('*')
-                 .eq('category', currentProduct.category)
-                 .neq('id', currentProduct.id)
-                 .limit(4);
+             // 3. Fetch Related Products
+             // Lọc từ allProducts đã fetch ở trên hoặc fallback nếu cần
+             let relatedSource = !error && allProducts ? allProducts : FALLBACK_PRODUCTS;
              
-             if (!relatedError) {
-                 if (relatedData && relatedData.length > 0) {
-                     const filledRelated = relatedData.map(fillImage);
-                     setRelatedProducts(filledRelated);
-                 } else {
-                     const { data: hotDb } = await supabase
-                        .from('products')
-                        .select('*')
-                        .eq('isHot', true)
-                        .neq('id', currentProduct.id)
-                        .limit(4);
-                     
-                     if (hotDb) {
-                         setRelatedProducts(hotDb.map(fillImage));
-                     } else {
-                         setRelatedProducts([]);
-                     }
-                 }
-             } else {
-                 const fallbackRelated = FALLBACK_PRODUCTS
-                     .filter(p => p.category === currentProduct!.category && String(p.id) !== String(currentProduct!.id))
-                     .slice(0, 4);
-                 setRelatedProducts(fallbackRelated);
+             const relatedData = relatedSource
+                 .filter((p: Product) => p.category === currentProduct!.category && p.id !== currentProduct!.id)
+                 .slice(0, 4)
+                 .map((p: Product) => fillImage(p)); // Fill image fallback
+
+             // Nếu không đủ related cùng category, lấy thêm Hot products
+             if (relatedData.length < 4) {
+                 const extra = relatedSource
+                    .filter((p: Product) => p.isHot && p.id !== currentProduct!.id && !relatedData.find(r => r.id === p.id))
+                    .slice(0, 4 - relatedData.length)
+                    .map((p: Product) => fillImage(p));
+                 relatedData.push(...extra);
              }
+             
+             setRelatedProducts(relatedData);
+
         } else {
              setProduct(null);
+             document.title = "Sản phẩm không tồn tại - AIDAYNE Store";
         }
 
       } catch (err) {
@@ -103,15 +109,20 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
       }
     };
     fetchProductAndRelated();
-  }, [id]);
+  }, [paramSlug]);
 
   const handleImageError = () => {
       setMainImageSrc('https://placehold.co/600x400?text=No+Image');
   };
 
-  if (loading) return <div className="min-h-screen pt-32 flex items-center justify-center font-medium text-gray-500">Loading...</div>;
+  if (loading) return <div className="min-h-screen pt-32 flex items-center justify-center font-medium text-gray-500">Đang tải sản phẩm...</div>;
 
-  if (!product) return null;
+  if (!product) return (
+      <div className="min-h-screen pt-32 flex flex-col items-center justify-center font-medium text-gray-500">
+          <p className="text-xl font-bold mb-4">Không tìm thấy sản phẩm</p>
+          <Link to="/products" className="bg-primary text-white px-6 py-2 rounded-xl">Xem tất cả sản phẩm</Link>
+      </div>
+  );
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentOriginalPrice = selectedVariant ? selectedVariant.originalPrice : product.originalPrice;
@@ -131,11 +142,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-8">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-8 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar">
            <Link to="/" className="hover:text-black transition-colors">Home</Link>
-           <ChevronRight size={14} />
+           <ChevronRight size={14} className="shrink-0" />
            <Link to={`/products?category=${product.category}`} className="hover:text-black transition-colors capitalize">{product.category}</Link>
-           <ChevronRight size={14} />
+           <ChevronRight size={14} className="shrink-0" />
            <span className="text-black">{product.name}</span>
         </div>
 
@@ -190,8 +201,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                  <div>
                     <h1 className="text-3xl lg:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">{product.name}</h1>
                     <div className="flex items-center gap-4">
-                       <div className="flex items-center gap-0.5 text-yellow-500">
-                          {[1,2,3,4,5].map(s => <Star key={s} size={16} fill="currentColor" className="drop-shadow-sm" />)}
+                       <div className="flex items-center gap-0.5">
+                          {[1,2,3,4,5].map(s => <Star key={s} size={16} fill={s <= Math.round(product.rating) ? "#FBBF24" : "none"} stroke={s <= Math.round(product.rating) ? "#FBBF24" : "#D1D5DB"} className="drop-shadow-sm" />)}
                        </div>
                        <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                        <span className="text-sm font-bold text-gray-500">{product.sold} đã bán</span>
@@ -314,7 +325,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                        Đánh giá từ khách hàng
                        <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{product.reviews?.length || 0}</span>
                     </h3>
-                    {/* Placeholder for "Write Review" button */}
                  </div>
 
                  {product.reviews && product.reviews.length > 0 ? (
@@ -331,10 +341,18 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                                       <div className="text-xs text-gray-400">{review.date} • {review.purchasedType}</div>
                                    </div>
                                 </div>
-                                <div className="flex text-yellow-400">
-                                   {[...Array(5)].map((_, i) => (
-                                      <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} stroke={i < review.rating ? "none" : "currentColor"} className="text-gray-300" />
-                                   ))}
+                                <div className="flex items-center gap-1">
+                                   {[1,2,3,4,5].map(star => {
+                                      const isFilled = star <= (Number(review.rating) || 0);
+                                      return (
+                                        <Star 
+                                            key={star} 
+                                            size={14} 
+                                            fill={isFilled ? "#FBBF24" : "none"} 
+                                            stroke={isFilled ? "#FBBF24" : "#D1D5DB"} 
+                                        />
+                                      );
+                                   })}
                                 </div>
                              </div>
                              <p className="text-gray-600 text-sm leading-relaxed">

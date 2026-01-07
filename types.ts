@@ -19,6 +19,7 @@ export interface Review {
 export interface Product {
   id: string;
   name: string;
+  slug?: string; // URL thân thiện SEO
   description: string; // Mô tả ngắn (Sapo)
   content?: string; // Nội dung chi tiết (HTML)
   price: number;
@@ -70,6 +71,7 @@ export interface CartItem extends Product {
 export interface BlogPost {
   id: string;
   title: string;
+  slug?: string; // URL thân thiện SEO
   excerpt: string;
   content: string; // HTML string for rich text
   author: string;

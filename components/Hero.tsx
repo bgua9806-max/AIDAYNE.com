@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { HERO_SLIDES as FALLBACK_SLIDES } from '../constants';
+import { HERO_SLIDES as FALLBACK_SLIDES, PRODUCTS } from '../constants';
 import { HeroSlide } from '../types';
+import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
@@ -24,9 +26,32 @@ export const Hero: React.FC = () => {
           .order('order', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          setSlides(data);
+          // Process link to ensure it uses slugs if it points to a product ID
+          const processedData = data.map(slide => {
+              if (slide.ctaLink.includes('/product/')) {
+                  const idPart = slide.ctaLink.split('/product/')[1];
+                  // Simple check if it looks like a number ID or UUID
+                  const product = PRODUCTS.find(p => p.id === idPart);
+                  if (product) {
+                      return { ...slide, ctaLink: `/product/${slugify(product.name)}` };
+                  }
+              }
+              return slide;
+          });
+          setSlides(processedData);
         } else {
-          setSlides(FALLBACK_SLIDES);
+          // Fallback slides processing
+          const processedFallback = FALLBACK_SLIDES.map(slide => {
+              if (slide.ctaLink.includes('/product/')) {
+                  const idPart = slide.ctaLink.split('/product/')[1];
+                  const product = PRODUCTS.find(p => p.id === idPart);
+                  if (product) {
+                      return { ...slide, ctaLink: `/product/${slugify(product.name)}` };
+                  }
+              }
+              return slide;
+          });
+          setSlides(processedFallback);
         }
       } catch (err) {
         console.error("Fetch hero slides error:", err);

@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Bot, User, ChevronRight, Sparkles } from 'lucide-react';
 import { PRODUCTS, CATEGORIES } from '../constants';
 import { Product } from '../types';
 import * as ReactRouterDOM from 'react-router-dom';
+import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
@@ -180,7 +182,7 @@ export const ChatBot: React.FC = () => {
                     {msg.products.map(product => (
                       <Link 
                         key={product.id} 
-                        to={`/product/${product.id}`}
+                        to={`/product/${product.slug || slugify(product.name)}`}
                         onClick={() => setIsOpen(false)} // Close chat on click (optional)
                         className="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all group"
                       >

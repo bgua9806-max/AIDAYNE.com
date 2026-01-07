@@ -15,7 +15,8 @@ import {
   BookOpen,
   TicketPercent, 
   Zap,
-  MonitorPlay // Icon for Hero Banner
+  MonitorPlay,
+  MessageSquare // Icon for Reviews
 } from 'lucide-react';
 
 const { Link, useLocation, Outlet } = ReactRouterDOM;
@@ -27,7 +28,8 @@ export const AdminLayout: React.FC = () => {
   const MENU_ITEMS = [
     { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Tổng quan' },
     { path: '/admin/products', icon: Package, label: 'Sản phẩm' },
-    { path: '/admin/hero', icon: MonitorPlay, label: 'Quản lý Banner' }, // New Item
+    { path: '/admin/reviews', icon: MessageSquare, label: 'Đánh giá' }, // New Item
+    { path: '/admin/hero', icon: MonitorPlay, label: 'Quản lý Banner' },
     { path: '/admin/orders', icon: ShoppingCart, label: 'Đơn hàng' },
     { path: '/admin/flash-sale', icon: Zap, label: 'Flash Sale' },
     { path: '/admin/promotions', icon: TicketPercent, label: 'Khuyến mãi' },

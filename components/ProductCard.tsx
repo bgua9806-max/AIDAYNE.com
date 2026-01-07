@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import * as ReactRouterDOM from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
+import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
@@ -21,11 +23,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
     setImgSrc('https://placehold.co/400x400?text=No+Image');
   };
 
+  // Ưu tiên dùng slug từ DB, nếu không có thì tự tạo từ tên
+  const productLink = `/product/${product.slug || slugify(product.name)}`;
+
   return (
     <div className="group relative bg-white rounded-3xl p-5 shadow-sm hover:shadow-hover transition-all duration-300 border border-transparent hover:border-gray-100 flex flex-col h-full active-scale">
       
       {/* Image Area - Square with rounded corners */}
-      <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 shadow-inner">
+      <Link to={productLink} className="block relative aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 shadow-inner">
         <img 
           src={imgSrc} 
           alt={product.name} 
@@ -46,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
            {product.isHot && <span className="text-[10px] font-bold text-orange-500">HOT</span>}
         </div>
         
-        <Link to={`/product/${product.id}`} className="block mb-2">
+        <Link to={productLink} className="block mb-2">
            <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 h-10 group-hover:text-primary transition-colors">
              {product.name}
            </h3>

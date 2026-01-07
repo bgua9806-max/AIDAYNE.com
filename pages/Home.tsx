@@ -32,7 +32,8 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
         
         if (data && data.length > 0) {
           // Merge logic: If DB product has no image, try to find in FALLBACK_PRODUCTS using Safe ID comparison
-          const enhancedData = data.map((p: Product) => {
+          // Explicitly cast data to any[] to avoid 'unknown' type issues during mapping
+          const enhancedData = (data as any[]).map((p: Product) => {
               if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
                   const fallback = FALLBACK_PRODUCTS.find(fp => String(fp.id) === String(p.id));
                   return fallback ? { ...p, image: fallback.image } : p;
@@ -58,7 +59,8 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
   // Lấy tất cả sản phẩm HOT hoặc Rating cao
   const hotCandidates = products.filter(p => p.isHot || p.rating >= 4.9);
   // Loại bỏ trùng lặp dựa trên ID và giới hạn 10 sản phẩm
-  const hotProducts = Array.from(new Map(hotCandidates.map(item => [item.id, item])).values()).slice(0, 10);
+  // Explicitly type Map to <string, Product> to ensure values() returns Product iterator
+  const hotProducts = Array.from(new Map<string, Product>(hotCandidates.map((item) => [item.id, item])).values()).slice(0, 10);
   
   const newProducts = products.filter(p => p.isNew || (typeof p.id === 'string' && parseInt(p.id) > 8));
 
