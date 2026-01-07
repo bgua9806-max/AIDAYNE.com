@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
 import { CartItem } from '../types';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, ShieldCheck, CreditCard, Smartphone, QrCode, Lock, CheckCircle, Package } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, ShieldCheck, CreditCard, QrCode, Lock, CheckCircle, Package } from 'lucide-react';
+
+const { useNavigate, Link } = ReactRouterDOM;
 
 interface CheckoutProps {
   cart: CartItem[];

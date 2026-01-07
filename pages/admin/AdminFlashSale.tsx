@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Clock, CheckCircle, Save, X, Search, Zap } from 'lucide-react';
+import { Plus, Trash2, Clock, X, Search, Zap } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Product } from '../../types';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../../constants';
@@ -43,19 +44,16 @@ export const AdminFlashSale: React.FC = () => {
         .order('created_at', { ascending: false });
 
       // 2. Fetch All Products from DB
-      const { data: prodData, error: prodError } = await supabase
+      const { data: prodData } = await supabase
         .from('products')
         .select('*');
 
       // 3. Kết hợp DB Products và Fallback Products (Smart Merge)
-      // Mục tiêu: Có danh sách đầy đủ nhất để Admin chọn
       const dbProducts = prodData || [];
       const dbIds = new Set(dbProducts.map(p => p.id));
       
-      // Lấy các sản phẩm trong fallback chưa có trong DB
       const fallbackOnly = FALLBACK_PRODUCTS.filter(fp => !dbIds.has(fp.id));
       
-      // Với các sản phẩm có trong DB, nếu thiếu ảnh, mượn ảnh từ fallback
       const enhancedDbProducts = dbProducts.map(p => {
           const fallback = FALLBACK_PRODUCTS.find(fp => fp.id === p.id);
           if (!p.image && fallback?.image) {
@@ -104,9 +102,9 @@ export const AdminFlashSale: React.FC = () => {
 
     const payload = {
        product_id: formData.product_id,
-       discount_percent: formData.discount_percent,
-       quantity_total: formData.quantity_total,
-       quantity_sold: formData.quantity_sold,
+       discount_percent: Number(formData.discount_percent),
+       quantity_total: Number(formData.quantity_total),
+       quantity_sold: Number(formData.quantity_sold),
        end_time: formData.end_time,
        is_active: formData.is_active
     };
@@ -122,7 +120,14 @@ export const AdminFlashSale: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+    let value: any = e.target.value;
+    
+    if (e.target.type === 'checkbox') {
+        value = (e.target as HTMLInputElement).checked;
+    } else if (e.target.type === 'number') {
+        value = Number(e.target.value);
+    }
+    
     setFormData({ ...formData, [e.target.name]: value });
   };
 
@@ -229,11 +234,11 @@ export const AdminFlashSale: React.FC = () => {
                  <div className="grid grid-cols-2 gap-5">
                     <div>
                        <label className="block text-sm font-bold text-gray-700 mb-2">Giảm giá (%)</label>
-                       <input type="number" name="discount_percent" required min="1" max="99" value={formData.discount_percent} onChange={handleChange as any} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" />
+                       <input type="number" name="discount_percent" required min="1" max="99" value={formData.discount_percent} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" />
                     </div>
                     <div>
                        <label className="block text-sm font-bold text-gray-700 mb-2">Số lượng bán</label>
-                       <input type="number" name="quantity_total" required min="1" value={formData.quantity_total} onChange={handleChange as any} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" />
+                       <input type="number" name="quantity_total" required min="1" value={formData.quantity_total} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" />
                     </div>
                  </div>
 
