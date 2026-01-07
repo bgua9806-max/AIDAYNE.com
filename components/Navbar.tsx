@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -317,6 +317,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                   <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tra cứu đơn hàng</Link>
                   <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tin tức & Mẹo vặt</Link>
                   <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Liên hệ hỗ trợ</Link>
+                  <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 py-3 text-sm font-bold text-blue-600 bg-blue-50 px-3 rounded-lg mt-2"><MessageCircle size={16}/> Chat Zalo hỗ trợ</a>
+                  <a href="https://www.facebook.com/profile.php?id=61552104173388&locale=vi_VN" target="_blank" rel="noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 py-3 text-sm font-bold text-[#1877F2] bg-blue-50/50 px-3 rounded-lg mt-1"><Facebook size={16}/> Chat Facebook</a>
                   
                   {!user ? (
                       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-bold text-primary mt-2">Đăng nhập / Đăng ký</Link>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, Package, Clock, CheckCircle, AlertCircle, Copy, ArrowRight, Truck } from 'lucide-react';
 import * as ReactRouterDOM from 'react-router-dom';
@@ -127,7 +128,14 @@ export const OrderLookup: React.FC = () => {
 
             <div className="mt-6 bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 text-center">
                <p className="text-sm text-gray-500 mb-3">Gặp khó khăn khi tra cứu?</p>
-               <button className="text-primary font-bold text-sm hover:underline">Liên hệ hỗ trợ Zalo</button>
+               <a 
+                 href="https://zalo.me/0374770023" 
+                 target="_blank" 
+                 rel="noreferrer" 
+                 className="inline-flex items-center gap-1.5 text-primary font-bold text-sm hover:underline"
+               >
+                 Liên hệ hỗ trợ Zalo <ArrowRight size={14} />
+               </a>
             </div>
           </div>
 

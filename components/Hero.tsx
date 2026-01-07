@@ -84,7 +84,7 @@ export const Hero: React.FC = () => {
   }, [currentSlide, isPaused, slides.length, nextSlide]);
 
   if (loading) {
-    return <div className="pt-24 lg:pt-32 pb-8 lg:pb-12 px-4 max-w-[1440px] mx-auto h-[230px] md:h-[600px] bg-gray-100 rounded-[2rem] lg:rounded-[2.5rem] animate-pulse"></div>;
+    return <div className="pt-24 lg:pt-32 pb-8 lg:pb-12 px-4 max-w-[1440px] mx-auto h-[200px] sm:h-[350px] md:h-[480px] bg-gray-100 rounded-[2rem] lg:rounded-[2.5rem] animate-pulse"></div>;
   }
 
   if (slides.length === 0) return null;
@@ -92,11 +92,12 @@ export const Hero: React.FC = () => {
   return (
     <div className="pt-24 lg:pt-32 pb-6 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-[1440px] mx-auto">
       {/* 
-         Mobile Height: h-[230px] (Horizontal frame) 
-         Desktop Height: md:h-[600px] (Original size)
+         Mobile Height: h-[200px]
+         Tablet Height: sm:h-[350px]
+         Desktop Height: md:h-[480px] (Reduced for better aesthetics)
       */}
       <div 
-        className="relative h-[230px] sm:h-[400px] md:h-[600px] w-full rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden shadow-soft group"
+        className="relative h-[200px] sm:h-[350px] md:h-[480px] w-full rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden shadow-soft group"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
@@ -116,16 +117,16 @@ export const Hero: React.FC = () => {
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent lg:from-black/60 lg:via-black/20"></div>
                
                {/* Text Content */}
-               <div className="absolute bottom-0 left-0 p-5 md:p-16 w-full max-w-4xl pb-8 md:pb-16 lg:pb-16">
+               <div className="absolute bottom-0 left-0 p-5 md:p-12 w-full max-w-4xl pb-8 md:pb-12 lg:pb-14">
                   <h2 
-                    className={`text-xl sm:text-3xl md:text-6xl font-bold mb-1 md:mb-4 tracking-tight leading-tight transform transition-all duration-700 delay-100 line-clamp-2 ${
+                    className={`text-xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-1 md:mb-4 tracking-tight leading-tight transform transition-all duration-700 delay-100 line-clamp-2 ${
                         slide.textColor === 'black' ? 'text-gray-900' : 'text-white'
                     } ${currentSlide === slides.indexOf(slide) ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
                   >
                     {slide.title}
                   </h2>
                   <p 
-                     className={`text-xs sm:text-base md:text-xl font-medium mb-3 md:mb-8 max-w-xl transform transition-all duration-700 delay-200 line-clamp-1 md:line-clamp-none ${
+                     className={`text-xs sm:text-base md:text-xl font-medium mb-3 md:mb-6 max-w-xl transform transition-all duration-700 delay-200 line-clamp-1 md:line-clamp-none ${
                          slide.textColor === 'black' ? 'text-gray-700' : 'text-gray-200'
                      } ${currentSlide === slides.indexOf(slide) ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
                   >

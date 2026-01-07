@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import * as ReactRouterDOM from 'react-router-dom';
 
 const { Link } = ReactRouterDOM;
@@ -21,9 +22,9 @@ export const Footer: React.FC = () => {
               Nền tảng cung cấp bản quyền phần mềm & giải trí số 1 Việt Nam. Uy tín - Tốc độ - Bảo mật.
             </p>
             <div className="flex gap-4">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors text-white hover:-translate-y-1 duration-300"><Facebook size={18} /></a>
+              <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-blue-600 transition-colors text-white hover:-translate-y-1 duration-300 font-bold text-[9px] tracking-tighter" title="Chat Zalo">ZALO</a>
+              <a href="https://www.facebook.com/profile.php?id=61552104173388&locale=vi_VN" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#1877F2] transition-colors text-white hover:-translate-y-1 duration-300"><Facebook size={18} /></a>
               <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors text-white hover:-translate-y-1 duration-300"><Instagram size={18} /></a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary transition-colors text-white hover:-translate-y-1 duration-300"><Twitter size={18} /></a>
             </div>
           </div>
 
@@ -59,7 +60,7 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center gap-4 group">
                 <Phone size={20} className="text-gray-600 group-hover:text-primary transition-colors" />
-                <a href="tel:0374770023" className="group-hover:text-gray-300 transition-colors">0374770023</a>
+                <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" className="group-hover:text-gray-300 transition-colors">0374.770.023 (Zalo)</a>
               </li>
               <li className="flex items-center gap-4 group">
                 <Mail size={20} className="text-gray-600 group-hover:text-primary transition-colors" />

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Star, Edit, Trash2, X, Save, MessageSquare, AlertCircle } from 'lucide-react';
+import { Plus, Search, Star, Edit, Trash2, X, Save, MessageSquare, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Product, Review } from '../../types';
 
@@ -15,6 +15,7 @@ export const AdminReviews: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,10 +39,12 @@ export const AdminReviews: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, reviews')
+        .select('id, name, reviews, rating')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) throw error;
+
+      if (data) {
         setProducts(data as Product[]);
         
         const flattened: AdminReview[] = [];
@@ -50,10 +53,10 @@ export const AdminReviews: React.FC = () => {
                p.reviews.forEach((r: Review) => {
                    flattened.push({
                        ...r,
-                       // Ép kiểu rating ngay khi lấy dữ liệu để đảm bảo an toàn
+                       // Ensure valid data types
                        rating: Number(r.rating) || 5, 
                        productId: p.id,
-                       productName: p.name
+                       productName: p.name || 'Sản phẩm không tên'
                    });
                });
            }
@@ -61,9 +64,10 @@ export const AdminReviews: React.FC = () => {
         setFlatReviews(flattened);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching reviews:", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -71,13 +75,18 @@ export const AdminReviews: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleRefresh = () => {
+      setRefreshing(true);
+      fetchData();
+  };
+
   const handleAddNew = () => {
     setIsEditing(false);
     setFormData({
         ...initialFormState,
         id: Math.random().toString(36).substr(2, 9),
         productId: products.length > 0 ? products[0].id : '',
-        date: new Date().toLocaleDateString('en-GB') // DD/MM/YYYY format
+        date: new Date().toLocaleDateString('vi-VN') // DD/MM/YYYY format
     });
     setIsModalOpen(true);
   };
@@ -98,19 +107,29 @@ export const AdminReviews: React.FC = () => {
 
   const handleDelete = async (review: AdminReview) => {
      if (window.confirm(`Xóa đánh giá của "${review.user}"?`)) {
-         // Find product
+         // Find product to update
          const product = products.find(p => p.id === review.productId);
          if (!product) return;
 
          const updatedReviews = (product.reviews || []).filter(r => r.id !== review.id);
          
+         // Recalculate Rating
+         let newRating = 5;
+         if (updatedReviews.length > 0) {
+             const totalStars = updatedReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+             newRating = Number((totalStars / updatedReviews.length).toFixed(1));
+         }
+
          const { error } = await supabase
             .from('products')
-            .update({ reviews: updatedReviews })
+            .update({ 
+                reviews: updatedReviews,
+                rating: newRating
+            })
             .eq('id', review.productId);
 
          if (!error) {
-             fetchData();
+             handleRefresh();
          } else {
              alert('Lỗi khi xóa: ' + error.message);
          }
@@ -129,7 +148,7 @@ export const AdminReviews: React.FC = () => {
     const newReviewData: Review = {
         id: formData.id,
         user: formData.user,
-        rating: Number(formData.rating), // Ép kiểu số quan trọng
+        rating: Number(formData.rating),
         comment: formData.comment,
         date: formData.date,
         purchasedType: formData.purchasedType
@@ -138,18 +157,24 @@ export const AdminReviews: React.FC = () => {
     if (isEditing) {
         updatedReviews = updatedReviews.map(r => r.id === formData.id ? newReviewData : r);
     } else {
-        // Add new to top
         updatedReviews = [newReviewData, ...updatedReviews];
     }
 
+    // Recalculate Rating
+    const totalStars = updatedReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+    const newRating = Number((totalStars / updatedReviews.length).toFixed(1));
+
     const { error } = await supabase
         .from('products')
-        .update({ reviews: updatedReviews })
+        .update({ 
+            reviews: updatedReviews,
+            rating: newRating
+        })
         .eq('id', formData.productId);
 
     if (!error) {
         setIsModalOpen(false);
-        fetchData();
+        handleRefresh();
     } else {
         alert('Lỗi lưu: ' + error.message);
     }
@@ -157,7 +182,6 @@ export const AdminReviews: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let value: string | number = e.target.value;
-    // Ép kiểu đặc biệt cho Rating
     if (e.target.name === 'rating') {
         value = parseInt(e.target.value, 10);
     }
@@ -177,12 +201,21 @@ export const AdminReviews: React.FC = () => {
             <h1 className="text-2xl font-extrabold text-gray-900">Quản lý Đánh giá</h1>
             <p className="text-sm text-gray-500">Xem và quản lý tất cả feedback từ khách hàng.</p>
          </div>
-         <button 
-            onClick={handleAddNew}
-            className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-primary-hover transition-all hover:scale-105"
-         >
-            <Plus size={20} /> Tạo đánh giá ảo
-         </button>
+         <div className="flex gap-2">
+             <button 
+                onClick={handleRefresh}
+                className={`p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-primary transition-all ${refreshing ? 'animate-spin' : ''}`}
+                title="Làm mới"
+             >
+                <RefreshCw size={20} />
+             </button>
+             <button 
+                onClick={handleAddNew}
+                className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-primary-hover transition-all hover:scale-105"
+             >
+                <Plus size={20} /> Tạo đánh giá ảo
+             </button>
+         </div>
       </div>
 
       {/* Filters */}
@@ -214,7 +247,7 @@ export const AdminReviews: React.FC = () => {
                     <div key={`${review.productId}-${review.id}`} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
                        <div className="flex flex-col sm:flex-row justify-between gap-4">
                           <div className="flex items-start gap-4">
-                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-primary font-bold text-lg shrink-0 border border-blue-50">
                                 {review.user.charAt(0).toUpperCase()}
                              </div>
                              <div>
@@ -227,7 +260,6 @@ export const AdminReviews: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-1 mb-2">
                                    {[1,2,3,4,5].map(star => {
-                                      // Logic tô màu sao: Nếu star <= rating thì màu vàng, ngược lại màu xám
                                       const isFilled = star <= (Number(review.rating) || 0);
                                       return (
                                         <Star 
@@ -270,24 +302,29 @@ export const AdminReviews: React.FC = () => {
                  {/* Product Selector */}
                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Sản phẩm</label>
-                    <select 
-                        name="productId" 
-                        value={formData.productId} 
-                        onChange={handleChange}
-                        disabled={isEditing} 
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-gray-100 disabled:text-gray-500"
-                    >
-                        <option value="">-- Chọn sản phẩm --</option>
-                        {products.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select 
+                            name="productId" 
+                            value={formData.productId} 
+                            onChange={handleChange}
+                            disabled={isEditing} 
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-gray-100 disabled:text-gray-500 appearance-none"
+                        >
+                            <option value="">-- Chọn sản phẩm --</option>
+                            {products.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                            {/* Arrow Icon */}
+                        </div>
+                    </div>
                  </div>
 
                  <div className="grid grid-cols-2 gap-5">
                      <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Tên khách hàng</label>
-                        <input type="text" name="user" required value={formData.user} onChange={handleChange} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 outline-none" />
+                        <input type="text" name="user" required value={formData.user} onChange={handleChange} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Nguyễn Văn A" />
                      </div>
                      <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Ngày đánh giá</label>
@@ -314,7 +351,7 @@ export const AdminReviews: React.FC = () => {
 
                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Nội dung bình luận</label>
-                    <textarea name="comment" required rows={4} value={formData.comment} onChange={handleChange} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 outline-none resize-none"></textarea>
+                    <textarea name="comment" required rows={4} value={formData.comment} onChange={handleChange} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Nhập đánh giá của khách hàng..."></textarea>
                  </div>
 
                  <div className="pt-4 flex gap-3">

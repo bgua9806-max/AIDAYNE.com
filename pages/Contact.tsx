@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, MessageSquare, HelpCircle, ChevronDown, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, MessageSquare, HelpCircle, ChevronDown, CheckCircle, Facebook, ArrowRight } from 'lucide-react';
 
 export const Contact: React.FC = () => {
   useEffect(() => {
@@ -78,7 +79,21 @@ export const Contact: React.FC = () => {
                    <div>
                       <h3 className="font-bold text-gray-900 text-lg mb-1">Hotline / Zalo</h3>
                       <p className="text-gray-500 text-sm mb-2">Hỗ trợ kỹ thuật & Tư vấn mua hàng</p>
-                      <a href="tel:0374770023" className="text-xl font-bold text-primary hover:underline">0374.770.023</a>
+                      <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" className="text-xl font-bold text-primary hover:underline block">0374.770.023</a>
+                      <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-block mt-1 hover:bg-blue-100">Chat Zalo Ngay</a>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center flex-shrink-0">
+                      <Facebook size={24} strokeWidth={2} />
+                   </div>
+                   <div>
+                      <h3 className="font-bold text-gray-900 text-lg mb-1">Facebook Fanpage</h3>
+                      <p className="text-gray-500 text-sm mb-2">Cập nhật tin tức & Khuyến mãi</p>
+                      <a href="https://www.facebook.com/profile.php?id=61552104173388&locale=vi_VN" target="_blank" rel="noreferrer" className="text-sm font-bold text-[#1877F2] hover:underline flex items-center gap-1">
+                        Truy cập Fanpage <ArrowRight size={14} />
+                      </a>
                    </div>
                 </div>
 
