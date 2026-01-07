@@ -108,8 +108,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                 </button>
                 
                 <Link to="/" className="flex items-center gap-1 group">
-                  <span className="font-semibold text-xl tracking-tight text-gray-900">
-                    AIDAYNE
+                  <span className="font-extrabold text-xl tracking-tight text-gray-900">
+                    AIDAYNE<span className="text-primary">.com</span>
                   </span>
                 </Link>
               </div>
@@ -259,7 +259,9 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
           <div className="absolute inset-y-0 left-0 w-[85%] max-w-xs bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto border-r border-white/20">
             <div className="p-6">
               <div className="flex items-center justify-between mb-8">
-                 <span className="font-semibold text-xl tracking-tight text-gray-900">AIDAYNE</span>
+                 <span className="font-extrabold text-xl tracking-tight text-gray-900">
+                    AIDAYNE<span className="text-primary">.com</span>
+                 </span>
                  <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-600">
                    <X size={20} />
                  </button>
