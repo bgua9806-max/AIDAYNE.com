@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
@@ -119,10 +120,16 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                    News
                  </Link>
                  <Link 
+                   to="/contact" 
+                   className={`text-[13px] font-medium px-3 py-2 rounded-lg transition-all ${isActive('/contact') ? 'text-black' : 'text-gray-600 hover:text-black'}`}
+                 >
+                   Contact
+                 </Link>
+                 <Link 
                    to="/order-lookup" 
                    className={`text-[13px] font-medium px-3 py-2 rounded-lg transition-all ${isActive('/order-lookup') ? 'text-black' : 'text-gray-600 hover:text-black'}`}
                  >
-                   Support
+                   Check Order
                  </Link>
               </div>
             </div>
@@ -266,7 +273,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                 </div>
 
                 <div className="pt-6 border-t border-gray-100">
-                  <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">Order Lookup</Link>
+                  <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">Check Order</Link>
                   <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">News & Tips</Link>
                   <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">Contact Support</Link>
                 </div>

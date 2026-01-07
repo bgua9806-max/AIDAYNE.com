@@ -28,7 +28,7 @@ import { AdminFlashSale } from './pages/admin/AdminFlashSale';
 import { AdminCustomers } from './pages/admin/AdminCustomers';
 import { AdminHero } from './pages/admin/AdminHero';
 
-const { HashRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
+const { BrowserRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
 
 function AppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);

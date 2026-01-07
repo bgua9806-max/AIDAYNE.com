@@ -54,9 +54,13 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
     fetchProducts();
   }, []);
   
-  // Logic lọc sản phẩm
-  const hotProducts = products.filter(p => p.isHot).concat(products.filter(p => p.rating >= 4.9)).slice(0, 10);
-  const newProducts = products.filter(p => p.isNew || parseInt(p.id) > 8);
+  // Logic lọc sản phẩm (Fix Duplicate Logic)
+  // Lấy tất cả sản phẩm HOT hoặc Rating cao
+  const hotCandidates = products.filter(p => p.isHot || p.rating >= 4.9);
+  // Loại bỏ trùng lặp dựa trên ID và giới hạn 10 sản phẩm
+  const hotProducts = Array.from(new Map(hotCandidates.map(item => [item.id, item])).values()).slice(0, 10);
+  
+  const newProducts = products.filter(p => p.isNew || (typeof p.id === 'string' && parseInt(p.id) > 8));
 
   return (
     <main className="min-h-screen bg-[#F2F2F7] pb-24">
