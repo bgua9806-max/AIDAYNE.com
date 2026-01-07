@@ -73,11 +73,11 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
       <FlashSale addToCart={addToCart} />
 
       {/* Best Sellers Section - GRID LAYOUT */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="flex items-end justify-between mb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 lg:mb-20">
+        <div className="flex items-end justify-between mb-6 lg:mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Sản phẩm nổi bật</h2>
-            <p className="text-sm text-gray-500 mt-2 font-medium">Được cộng đồng tin dùng nhiều nhất tuần qua</p>
+            <p className="text-sm text-gray-500 mt-1 lg:mt-2 font-medium">Được cộng đồng tin dùng nhiều nhất tuần qua</p>
           </div>
           
           <Link to="/products?sort=default" className="hidden sm:flex items-center gap-1 text-sm font-bold text-primary hover:text-primary-hover transition-colors ml-2">
@@ -87,40 +87,57 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
         
         {/* Grid Container instead of Scroll */}
         {loading ? (
-             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
                {[1,2,3,4,5].map(i => (
                  <div key={i} className="h-[350px] bg-gray-200 rounded-3xl animate-pulse"></div>
                ))}
              </div>
         ) : (
-             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
                   {hotProducts.map((product) => (
                     <ProductCard key={`hot-${product.id}`} product={product} onAddToCart={addToCart} />
                   ))}
              </div>
         )}
 
-         <Link to="/products?sort=default" className="sm:hidden flex justify-center w-full mt-8 py-3 text-sm font-bold text-gray-600 bg-white rounded-xl border border-gray-200 shadow-sm">
+         <Link to="/products?sort=default" className="sm:hidden flex justify-center w-full mt-6 py-3 text-sm font-bold text-gray-600 bg-white rounded-xl border border-gray-200 shadow-sm">
             Xem tất cả sản phẩm
           </Link>
       </section>
 
-      {/* Promo Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-xl shadow-red-500/20">
+      {/* Promo Banner - Optimized for Mobile Horizontal Frame */}
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mb-12 lg:mb-20">
+        <div className="relative rounded-[1.5rem] lg:rounded-[2.5rem] overflow-hidden bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-xl shadow-red-500/20">
            {/* Abstract shapes */}
-           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-black/10 rounded-full blur-3xl"></div>
+           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-black/10 rounded-full blur-3xl pointer-events-none"></div>
            
-           <div className="relative z-10 p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10">
-             <div className="max-w-xl text-center md:text-left">
-               <span className="inline-block bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold mb-6 border border-white/20 uppercase tracking-wide">Tháng Vàng Ưu Đãi</span>
-               <h3 className="text-3xl md:text-5xl font-extrabold mb-6 leading-tight">Adobe Creative Cloud <br/> Giảm tới 70%</h3>
-               <p className="text-red-100 mb-8 text-lg font-medium">Sở hữu trọn bộ Photoshop, AI, Premiere... bản quyền chính hãng chỉ với 150k/tháng.</p>
-               <Link to="/products?category=design" className="inline-block bg-white text-red-600 px-10 py-4 rounded-full font-bold hover:bg-gray-50 transition-colors shadow-lg hover:scale-105 transform duration-200">Khám phá ngay</Link>
+           <div className="relative z-10 p-6 md:p-16 flex flex-row items-center justify-between gap-4 md:gap-10">
+             
+             {/* Left Content */}
+             <div className="flex-1 max-w-xl text-left">
+               <span className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] lg:text-xs font-bold mb-3 lg:mb-6 border border-white/20 uppercase tracking-wide">
+                  Tháng Vàng Ưu Đãi
+               </span>
+               <h3 className="text-xl md:text-5xl font-extrabold mb-2 lg:mb-6 leading-tight">
+                  Adobe Creative <br className="hidden md:block"/> Cloud
+               </h3>
+               <p className="text-red-100 mb-4 lg:mb-8 text-xs md:text-lg font-medium max-w-[200px] md:max-w-full">
+                  Giảm tới <span className="text-white font-bold text-lg md:text-2xl">70%</span> trọn bộ bản quyền.
+               </p>
+               <Link to="/products?category=design" className="inline-flex items-center gap-1 bg-white text-red-600 px-4 py-2 lg:px-10 lg:py-4 rounded-full font-bold text-xs lg:text-base hover:bg-gray-50 transition-colors shadow-lg hover:scale-105 transform duration-200">
+                  Khám phá <span className="hidden sm:inline">ngay</span>
+               </Link>
              </div>
-             <div className="relative">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Creative_Cloud.svg/2101px-Creative_Cloud.svg.png" alt="Adobe" className="w-48 h-48 md:w-72 md:h-72 object-contain relative z-10 drop-shadow-2xl animate-pulse-slow" style={{animationDuration: '3s'}} />
+
+             {/* Right Image - Smaller on Mobile to fit Horizontal Frame */}
+             <div className="relative flex-shrink-0">
+               <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Creative_Cloud.svg/2101px-Creative_Cloud.svg.png" 
+                  alt="Adobe" 
+                  className="w-24 h-24 md:w-72 md:h-72 object-contain relative z-10 drop-shadow-2xl animate-pulse-slow" 
+                  style={{animationDuration: '3s'}} 
+               />
              </div>
            </div>
         </div>
@@ -128,10 +145,10 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
 
       {/* New Arrivals Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-end justify-between mb-6 lg:mb-8">
            <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Mới cập nhật</h2>
-            <p className="text-sm text-gray-500 mt-2 font-medium">Công nghệ và giải pháp mới nhất thị trường</p>
+            <p className="text-sm text-gray-500 mt-1 lg:mt-2 font-medium">Công nghệ và giải pháp mới nhất thị trường</p>
           </div>
           <Link to="/products?sort=newest" className="hidden sm:flex items-center gap-1 text-sm font-bold text-primary hover:text-primary-hover transition-colors">
             Xem tất cả <ArrowRight size={16} />
@@ -139,18 +156,18 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
         </div>
         
         {loading ? (
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
               {[1,2,3,4,5].map(i => <div key={i} className="h-[350px] bg-gray-200 rounded-3xl animate-pulse"></div>)}
            </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
             {newProducts.map((product) => (
               <ProductCard key={`new-${product.id}`} product={product} onAddToCart={addToCart} />
             ))}
           </div>
         )}
         
-         <Link to="/products?sort=newest" className="sm:hidden flex justify-center w-full mt-8 py-3 text-sm font-bold text-gray-600 bg-white rounded-xl border border-gray-200">
+         <Link to="/products?sort=newest" className="sm:hidden flex justify-center w-full mt-6 py-3 text-sm font-bold text-gray-600 bg-white rounded-xl border border-gray-200">
             Xem tất cả
           </Link>
       </section>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -73,6 +73,16 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     navigate(`/product/${product.slug || slugify(product.name)}`);
     setSearchQuery('');
     setShowSuggestions(false);
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (searchQuery.trim()) {
+          navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
+          setIsMobileMenuOpen(false);
+          setShowSuggestions(false);
+      }
   };
 
   const handleLogout = async () => {
@@ -83,8 +93,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   return (
     <>
       {/* Floating Navbar Container */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${scrolled ? 'pt-2 px-4' : 'pt-0'}`}>
-        <div className={`max-w-7xl mx-auto transition-all duration-500 ${scrolled ? 'glass rounded-2xl shadow-soft py-3 px-6' : 'bg-transparent py-6 px-4 sm:px-8'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${scrolled ? 'pt-2 px-3 lg:px-4' : 'pt-0'}`}>
+        <div className={`max-w-7xl mx-auto transition-all duration-500 ${scrolled ? 'glass rounded-2xl shadow-soft py-3 px-4 lg:px-6' : 'bg-transparent py-4 lg:py-6 px-4 sm:px-8'}`}>
           <div className="flex items-center justify-between gap-4">
             
             {/* Logo Area */}
@@ -135,8 +145,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
               </div>
             </div>
 
-            {/* Search Bar - Center */}
-            <div className="flex-1 max-w-md mx-auto hidden sm:block" ref={searchRef}>
+            {/* Search Bar - Center (Desktop Only) */}
+            <div className="flex-1 max-w-md mx-auto hidden lg:block" ref={searchRef}>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={16} className="text-gray-400 group-focus-within:text-primary transition-colors" />
@@ -180,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Link to="/admin" className="hidden sm:flex items-center p-2 text-gray-500 hover:text-black transition-all" title="Admin">
                   <LayoutDashboard size={20} strokeWidth={1.5} />
               </Link>
@@ -190,12 +200,12 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
               {user ? (
                  <button 
                     onClick={handleLogout}
-                    className="p-2 text-gray-500 hover:text-black transition-all"
+                    className="hidden sm:block p-2 text-gray-500 hover:text-black transition-all"
                  >
                     <LogOut size={20} strokeWidth={1.5} />
                  </button>
               ) : (
-                <Link to="/login" className="p-2 text-gray-500 hover:text-black transition-all">
+                <Link to="/login" className="hidden sm:block p-2 text-gray-500 hover:text-black transition-all">
                   <User size={20} strokeWidth={1.5} />
                 </Link>
               )}
@@ -244,39 +254,75 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="absolute inset-y-0 left-0 w-[80%] max-w-xs bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto border-r border-white/20">
+        <div className="fixed inset-0 z-[60] lg:hidden animate-fade-in">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="absolute inset-y-0 left-0 w-[85%] max-w-xs bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto border-r border-white/20">
             <div className="p-6">
               <div className="flex items-center justify-between mb-8">
                  <span className="font-semibold text-xl tracking-tight text-gray-900">AIDAYNE</span>
-                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full">
+                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-600">
                    <X size={20} />
                  </button>
               </div>
 
+              {/* Mobile Search - Added as requested */}
+              <div className="mb-8">
+                  <form onSubmit={handleSearchSubmit} className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                          type="text" 
+                          placeholder="Tìm sản phẩm..." 
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                      {searchQuery && (
+                          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary text-white p-1 rounded-md">
+                              <ArrowRight size={14} />
+                          </button>
+                      )}
+                  </form>
+                  {/* Mobile Suggestions */}
+                  {suggestions.length > 0 && searchQuery && (
+                      <div className="mt-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                          {suggestions.map(p => (
+                              <div key={p.id} onClick={() => handleSuggestionClick(p)} className="flex items-center gap-3 p-3 border-b border-gray-50 last:border-0 active:bg-gray-50">
+                                  <img src={p.image} alt="" className="w-8 h-8 rounded-md bg-gray-100 object-cover" />
+                                  <span className="text-sm font-medium text-gray-900 truncate">{p.name}</span>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Shop Categories</h3>
+                  <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Danh mục</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {CATEGORIES.map((cat) => (
                       <Link 
                         key={cat.id} 
                         to={`/products?category=${cat.id}`} 
-                        className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 text-gray-700 transition-colors"
+                        className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 text-gray-700 transition-colors border border-transparent hover:border-blue-100"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <cat.icon size={20} className="text-primary" strokeWidth={1.5} />
-                        <span className="text-xs font-medium">{cat.name}</span>
+                        <span className="text-xs font-medium text-center">{cat.name}</span>
                       </Link>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-100">
-                  <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">Check Order</Link>
-                  <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">News & Tips</Link>
-                  <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900">Contact Support</Link>
+                <div className="pt-6 border-t border-gray-100 space-y-1">
+                  <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tra cứu đơn hàng</Link>
+                  <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tin tức & Mẹo vặt</Link>
+                  <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Liên hệ hỗ trợ</Link>
+                  
+                  {!user ? (
+                      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-bold text-primary mt-2">Đăng nhập / Đăng ký</Link>
+                  ) : (
+                      <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full text-left py-3 text-sm font-bold text-red-500 mt-2">Đăng xuất</button>
+                  )}
                 </div>
               </div>
             </div>
