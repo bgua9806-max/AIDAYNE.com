@@ -177,10 +177,10 @@ export const ChatBot: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button - Positioned higher on mobile (bottom-28) */}
+      {/* Floating Button */}
       <button
         onClick={toggleChat}
-        className={`fixed bottom-28 lg:bottom-6 right-4 lg:right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary animate-bounce-slow'}`}
+        className={`fixed bottom-6 right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary animate-bounce-slow'}`}
       >
         {isOpen ? (
             <X size={28} className="text-white" />
@@ -195,9 +195,9 @@ export const ChatBot: React.FC = () => {
         )}
       </button>
 
-      {/* Chat Window - Positioned relative to button on mobile (bottom-44) */}
+      {/* Chat Window */}
       <div 
-        className={`fixed bottom-44 lg:bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[600px] max-h-[60vh] lg:max-h-[75vh] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 z-[60] flex flex-col overflow-hidden transition-all duration-500 origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-20 pointer-events-none'}`}
+        className={`fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[600px] max-h-[75vh] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 z-[60] flex flex-col overflow-hidden transition-all duration-500 origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-20 pointer-events-none'}`}
       >
         {/* Header */}
         <div className="bg-white/50 backdrop-blur-md p-5 flex items-center justify-between shrink-0 border-b border-gray-100">

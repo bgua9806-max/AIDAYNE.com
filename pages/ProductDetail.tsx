@@ -1,18 +1,20 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product, Variant, Review } from '../types';
 import { 
   Star, ShieldCheck, Zap, ArrowLeft, Heart, 
   ChevronRight, Check, CheckCircle2, User, MessageCircle,
-  Clock, Gift, Globe, Lock, PlayCircle, HelpCircle, ChevronDown, ShoppingCart, Sparkles, Share2, ArrowRight, Facebook, Copy, Terminal, FileText, Info, Edit3, LayoutList, AlignLeft, BookOpen, Menu, List
+  Clock, Gift, Globe, Lock, PlayCircle, HelpCircle, ChevronDown, ShoppingCart, Sparkles, Share2, ArrowRight, Facebook, Copy, Terminal, FileText, Info, Edit3, LayoutList, AlignLeft, BookOpen, Menu, List, ChevronUp
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
+import { MobileProductCard } from '../components/mobile/MobileProductCard';
 import { slugify } from '../lib/utils';
 import { SEO } from '../components/SEO';
 
-const { useParams, Link } = ReactRouterDOM;
+const { useParams, Link, useNavigate } = ReactRouterDOM;
 
 interface ProductDetailProps {
   addToCart: (product: Product) => void;
@@ -33,15 +35,17 @@ const getCategoryTheme = (category: string = '') => {
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
   const { id: paramSlug } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [mainImageSrc, setMainImageSrc] = useState<string>('');
   
-  // Scroll Spy & Sticky Bar State
+  // UX State
   const [activeSection, setActiveSection] = useState('description');
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [isDescExpanded, setIsDescExpanded] = useState(false); // For mobile expand
   const mainBuyBtnRef = useRef<HTMLButtonElement>(null);
 
   // Review Form State
@@ -120,25 +124,23 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
           // 1. Sticky Bar Logic
           if (mainBuyBtnRef.current) {
               const rect = mainBuyBtnRef.current.getBoundingClientRect();
-              // Show sticky bar when the main button scrolls out of view (top < 0 or > viewport height)
-              // We want it when user scrolls DOWN past the button.
               setShowStickyBar(rect.bottom < 0);
           }
 
-          // 2. Scroll Spy Logic
-          const sections = ['description', 'features', 'guide', 'reviews'];
-          // Simple heuristic: which section is near the top of the viewport
-          for (const section of sections) {
-              const element = document.getElementById(section);
-              if (element) {
-                  const rect = element.getBoundingClientRect();
-                  // Offset of 150px for header
-                  if (rect.top >= 0 && rect.top < 300) {
-                      setActiveSection(section);
-                      break;
-                  } else if (rect.top < 0 && rect.bottom > 150) {
-                      setActiveSection(section);
-                      break;
+          // 2. Scroll Spy Logic (Desktop Only)
+          if (window.innerWidth >= 1024) {
+              const sections = ['description', 'features', 'guide', 'reviews'];
+              for (const section of sections) {
+                  const element = document.getElementById(section);
+                  if (element) {
+                      const rect = element.getBoundingClientRect();
+                      if (rect.top >= 0 && rect.top < 300) {
+                          setActiveSection(section);
+                          break;
+                      } else if (rect.top < 0 && rect.bottom > 150) {
+                          setActiveSection(section);
+                          break;
+                      }
                   }
               }
           }
@@ -292,8 +294,39 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
         schema={productSchema}
       />
 
-      {/* Dynamic Ambient Background */}
-      <div className="absolute top-0 left-0 right-0 h-[800px] overflow-hidden z-0 pointer-events-none">
+      {/* --- MOBILE: FLOATING NAV & IMMERSIVE HEADER --- */}
+      <div className="lg:hidden">
+          {/* Top Nav Overlay */}
+          <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 pointer-events-none">
+              <button 
+                onClick={() => navigate(-1)} 
+                className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-800 shadow-sm pointer-events-auto active:scale-90 transition-transform"
+              >
+                  <ArrowLeft size={20} />
+              </button>
+              <div className="flex gap-2 pointer-events-auto">
+                  <button className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-800 shadow-sm active:scale-90 transition-transform">
+                      <Share2 size={20} />
+                  </button>
+                  <Link to="/products" className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-800 shadow-sm active:scale-90 transition-transform">
+                      <ShoppingCart size={20} />
+                  </Link>
+              </div>
+          </div>
+
+          {/* Product Image (Immersive) */}
+          <div className="relative w-full aspect-square bg-white">
+              <img 
+                  src={mainImageSrc} 
+                  alt={product.name}
+                  className="w-full h-full object-contain p-8"
+              />
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#F5F5F7] to-transparent"></div>
+          </div>
+      </div>
+
+      {/* Dynamic Ambient Background (Desktop Only) */}
+      <div className="hidden lg:block absolute top-0 left-0 right-0 h-[800px] overflow-hidden z-0 pointer-events-none">
           <div 
             className="absolute top-[-20%] left-[10%] w-[70%] h-[100%] blur-[120px] rounded-full mix-blend-multiply opacity-20"
             style={{ backgroundColor: theme.color }}
@@ -301,10 +334,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
           <div className="absolute top-[-10%] right-[10%] w-[50%] h-[80%] bg-blue-500/10 blur-[120px] rounded-full mix-blend-multiply"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 lg:pt-32">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pt-32">
         
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
+        {/* Breadcrumb (Desktop) */}
+        <nav className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-400 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
            <Link to="/" className="hover:text-black transition-colors">Home</Link>
            <ChevronRight size={12} className="shrink-0 text-gray-300" />
            <Link to={`/products?category=${product.category}`} className="hover:text-black transition-colors capitalize">{product.category}</Link>
@@ -312,11 +345,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
            <span className="text-gray-900 font-semibold">{product.name}</span>
         </nav>
 
-        {/* --- HERO SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start mb-16">
+        {/* --- MAIN INFO SECTION --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start mb-8 lg:mb-16 -mt-10 lg:mt-0">
            
-           {/* Left: Images */}
-           <div className="lg:col-span-7 xl:col-span-8 space-y-8 animate-fade-in-up">
+           {/* Left: Images (Desktop) */}
+           <div className="hidden lg:block lg:col-span-7 xl:col-span-8 space-y-8 animate-fade-in-up">
               <div className="relative w-full aspect-[4/3] lg:aspect-[16/10] rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border border-gray-100/50 group">
                  {/* Dynamic Glow */}
                  <div className="absolute inset-0 z-0 overflow-hidden">
@@ -327,12 +360,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                      ></div>
                  </div>
 
-                 {/* Image */}
                  <div className="absolute inset-0 z-10 flex items-center justify-center p-8 lg:p-16">
                     <img 
                       src={mainImageSrc} 
                       alt={product.name} 
-                      onError={handleImageError}
                       className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-transform duration-700 ease-out group-hover:scale-105" 
                     />
                  </div>
@@ -356,12 +387,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
               </div>
            </div>
 
-           {/* Right: Purchase Card (Sticky on Large Screens) */}
-           <div className="hidden lg:block lg:col-span-5 xl:col-span-4 relative">
-              <div className="sticky top-28 space-y-6">
+           {/* Right: Purchase Info (Mobile & Desktop) */}
+           <div className="col-span-1 lg:col-span-5 xl:col-span-4 relative z-20">
+              <div className="lg:sticky lg:top-28 space-y-6">
                  
-                 <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] border border-gray-100 relative overflow-hidden animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-                    <div className="mb-8">
+                 {/* Main Info Card */}
+                 <div className="bg-white rounded-[2rem] p-6 lg:p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] border border-gray-100 relative overflow-hidden animate-fade-in-up">
+                    <div className="mb-6 lg:mb-8">
                         <div className="flex items-center gap-2 mb-3">
                              <span className="px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider border border-gray-200">{product.category}</span>
                              {product.rating >= 4.5 && (
@@ -370,14 +402,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                                 </div>
                              )}
                         </div>
-                        <h1 className="text-3xl font-extrabold text-gray-900 leading-tight mb-4 tracking-tight">{product.name}</h1>
+                        <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-900 leading-tight mb-2 lg:mb-4 tracking-tight">{product.name}</h1>
                         <div className="flex items-end gap-3">
-                           <span className="text-5xl font-extrabold text-gray-900 tracking-tighter" style={{ color: theme.color }}>
+                           <span className="text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tighter" style={{ color: theme.color }}>
                               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
                            </span>
                         </div>
                         {currentDiscount > 0 && (
-                            <span className="text-lg text-gray-400 line-through font-medium block mt-2">
+                            <span className="text-sm lg:text-lg text-gray-400 line-through font-medium block mt-1">
                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentOriginalPrice)}
                             </span>
                         )}
@@ -385,32 +417,41 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
 
                     <div className="w-full h-px bg-gray-100 mb-6"></div>
 
-                    {/* Variant Selector */}
+                    {/* Variant Selector (Improved for Mobile) */}
                     {product.variants && product.variants.length > 0 && (
                         <div className="mb-8">
                            <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-3 block">Chọn gói dịch vụ</label>
-                           <div className="space-y-3">
+                           <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-3">
                               {product.variants.map(v => (
-                                 <div 
+                                 <button 
                                    key={v.id}
                                    onClick={() => setSelectedVariant(v)}
-                                   className={`cursor-pointer p-4 rounded-2xl border-2 flex items-center justify-between transition-all relative overflow-hidden group ${selectedVariant?.id === v.id ? 'bg-gray-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}
-                                   style={{ borderColor: selectedVariant?.id === v.id ? theme.color : '' }}
+                                   className={`
+                                      flex-shrink-0 flex items-center justify-between p-3 lg:p-4 rounded-xl lg:rounded-2xl border-2 transition-all relative overflow-hidden group text-left
+                                      ${selectedVariant?.id === v.id 
+                                        ? 'bg-gray-50 border-current shadow-sm' 
+                                        : 'bg-white border-gray-100 hover:border-gray-200'
+                                      }
+                                   `}
+                                   style={{ 
+                                      borderColor: selectedVariant?.id === v.id ? theme.color : '',
+                                      minWidth: '100px' // For mobile chips
+                                   }}
                                  >
                                     <div className="relative z-10 flex flex-col">
-                                        <span className={`font-bold text-sm ${selectedVariant?.id === v.id ? 'text-gray-900' : 'text-gray-900'}`}>{v.name}</span>
-                                        {selectedVariant?.id === v.id && <span className="text-[10px] font-medium flex items-center gap-1 mt-0.5" style={{ color: theme.color }}><Check size={10}/> Đã chọn</span>}
+                                        <span className={`font-bold text-xs lg:text-sm ${selectedVariant?.id === v.id ? 'text-gray-900' : 'text-gray-700'}`}>{v.name}</span>
                                     </div>
-                                    <span className="relative z-10 font-bold text-gray-900">
+                                    <span className="hidden lg:block relative z-10 font-bold text-gray-900 ml-4">
                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v.price)}
                                     </span>
-                                 </div>
+                                 </button>
                               ))}
                            </div>
                         </div>
                     )}
 
-                    <div className="space-y-3">
+                    {/* Buy Actions (Desktop Only) */}
+                    <div className="hidden lg:block space-y-3">
                        <button 
                           ref={mainBuyBtnRef}
                           onClick={handleAddToCart}
@@ -429,7 +470,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                        </div>
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="hidden lg:flex mt-6 pt-6 border-t border-gray-100 items-center justify-center gap-2 text-xs text-gray-500 font-medium">
                         <Lock size={12} className="text-green-500" />
                         Thanh toán an toàn SSL 256-bit
                     </div>
@@ -438,10 +479,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
            </div>
         </div>
 
-        {/* --- SCROLL SPY CONTENT SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-20 relative">
+        {/* --- SCROLL SPY CONTENT SECTION (Mobile Collapsible, Desktop Tabs) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:mt-20 relative">
             
-            {/* Sticky Table of Contents (Left) */}
+            {/* Sticky Table of Contents (Left - Desktop) */}
             <div className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-32 pl-2">
                     <h3 className="font-extrabold text-gray-900 mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
@@ -470,24 +511,25 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                 </div>
             </div>
 
-            {/* Main Scrolling Content (Right) */}
-            <div className="col-span-12 lg:col-span-9 space-y-20">
+            {/* Main Content (Right) */}
+            <div className="col-span-12 lg:col-span-9 space-y-12 lg:space-y-20">
                 
-                {/* 1. Description */}
+                {/* 1. Description (Mobile Collapsible) */}
                 <section id="description" className="scroll-mt-32 animate-fade-in-up">
-                    <h2 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center gap-3">
+                    <h2 className="text-xl lg:text-3xl font-extrabold text-gray-900 mb-4 lg:mb-8 flex items-center gap-3">
                         <Info size={28} style={{ color: theme.color }} /> Thông tin chi tiết
                     </h2>
-                    <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-gray-100">
+                    
+                    <div className={`relative bg-white rounded-[2rem] p-6 lg:p-12 shadow-sm border border-gray-100 overflow-hidden ${!isDescExpanded ? 'max-h-[300px] lg:max-h-none' : ''}`}>
                         {/* Sapo */}
-                        <div className="mb-10 p-8 rounded-3xl border border-dashed border-gray-200 bg-gray-50/50">
-                            <div className="text-gray-800 font-medium leading-relaxed whitespace-pre-line text-lg">
+                        <div className="mb-6 lg:mb-10 p-6 lg:p-8 rounded-3xl border border-dashed border-gray-200 bg-gray-50/50">
+                            <div className="text-gray-800 font-medium leading-relaxed whitespace-pre-line text-base lg:text-lg">
                                 {product.description}
                             </div>
                         </div>
                         {/* HTML Content */}
                         {product.content && (
-                            <div className="text-gray-700 leading-8 text-[17px] product-content-viewer">
+                            <div className="text-gray-700 leading-8 text-[15px] lg:text-[17px] product-content-viewer">
                                 {product.content.includes('<') && product.content.includes('>') ? (
                                     <div dangerouslySetInnerHTML={{ __html: product.content }} />
                                 ) : (
@@ -495,13 +537,33 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                                 )}
                             </div>
                         )}
+
+                        {/* Mobile Expand Gradient */}
+                        <div className={`lg:hidden absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent flex items-end justify-center pb-4 ${isDescExpanded ? 'hidden' : 'block'}`}>
+                            <button 
+                               onClick={() => setIsDescExpanded(true)}
+                               className="px-6 py-2 bg-white shadow-md rounded-full text-sm font-bold text-gray-700 flex items-center gap-1 border border-gray-100"
+                            >
+                                Xem thêm <ChevronDown size={14} />
+                            </button>
+                        </div>
                     </div>
+                    {isDescExpanded && (
+                        <div className="flex justify-center mt-4 lg:hidden">
+                            <button 
+                               onClick={() => { setIsDescExpanded(false); document.getElementById('description')?.scrollIntoView({ behavior: 'smooth' }); }}
+                               className="text-sm font-bold text-gray-500 flex items-center gap-1"
+                            >
+                                Thu gọn <ChevronUp size={14} />
+                            </button>
+                        </div>
+                    )}
                 </section>
 
                 {/* 2. Features */}
                 {product.features && product.features.length > 0 && (
                     <section id="features" className="scroll-mt-32">
-                        <h2 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center gap-3">
+                        <h2 className="text-xl lg:text-3xl font-extrabold text-gray-900 mb-4 lg:mb-8 flex items-center gap-3">
                             <LayoutList size={28} style={{ color: theme.color }} /> Tính năng nổi bật
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -513,7 +575,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                                     >
                                         <Check size={20} strokeWidth={3} />
                                     </div>
-                                    <span className="font-bold text-gray-800 text-base leading-tight">{feature}</span>
+                                    <span className="font-bold text-gray-800 text-sm lg:text-base leading-tight">{feature}</span>
                                 </div>
                             ))}
                         </div>
@@ -522,11 +584,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
 
                 {/* 3. Activation Guide */}
                 <section id="guide" className="scroll-mt-32">
-                    <h2 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center gap-3">
+                    <h2 className="text-xl lg:text-3xl font-extrabold text-gray-900 mb-4 lg:mb-8 flex items-center gap-3">
                         <Terminal size={28} style={{ color: theme.color }} /> Hướng dẫn sử dụng
                     </h2>
                     {product.activationGuide ? (
-                        <div className="bg-[#1E1E1E] rounded-[2rem] p-8 md:p-10 text-gray-300 font-mono text-base leading-relaxed shadow-2xl relative overflow-hidden group">
+                        <div className="bg-[#1E1E1E] rounded-[2rem] p-6 lg:p-10 text-gray-300 font-mono text-sm lg:text-base leading-relaxed shadow-2xl relative overflow-hidden group">
                             <div className="absolute top-0 left-0 w-full h-12 bg-[#2D2D2D] flex items-center px-6 gap-2 border-b border-white/5">
                                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
@@ -538,43 +600,44 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                             </div>
                             <button 
                                 onClick={() => {navigator.clipboard.writeText(product.activationGuide || ''); alert('Đã sao chép hướng dẫn!')}}
-                                className="absolute top-3 right-4 text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100" 
+                                className="absolute top-3 right-4 text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-all" 
                                 title="Sao chép"
                             >
                                 <Copy size={18} />
                             </button>
                         </div>
                     ) : (
-                        <div className="text-center py-16 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="text-center py-12 lg:py-16 bg-white rounded-[2rem] border border-gray-100 shadow-sm">
                             <div 
-                                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gray-200"
+                                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gray-200"
                                 style={{ backgroundColor: `${theme.color}15`, color: theme.color }}
                             >
-                                <Zap size={32} fill="currentColor" />
+                                <Zap size={28} fill="currentColor" />
                             </div>
-                            <h3 className="font-bold text-gray-900 text-xl">Kích hoạt tự động</h3>
-                            <p className="text-gray-500 mt-2 max-w-md mx-auto">Thông tin sẽ được gửi qua email ngay sau khi thanh toán.</p>
+                            <h3 className="font-bold text-gray-900 text-lg lg:text-xl">Kích hoạt tự động</h3>
+                            <p className="text-gray-500 mt-2 max-w-md mx-auto text-sm lg:text-base">Thông tin sẽ được gửi qua email ngay sau khi thanh toán.</p>
                         </div>
                     )}
                 </section>
 
                 {/* 4. Reviews */}
                 <section id="reviews" className="scroll-mt-32">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-6 lg:mb-8">
+                        <h2 className="text-xl lg:text-3xl font-extrabold text-gray-900 flex items-center gap-3">
                             <MessageCircle size={28} style={{ color: theme.color }} /> Đánh giá
                         </h2>
                         <button 
                             onClick={() => setShowReviewForm(!showReviewForm)}
-                            className="flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg active:scale-95"
+                            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 lg:px-5 lg:py-2.5 rounded-xl font-bold text-xs lg:text-sm hover:bg-black transition-all shadow-lg active:scale-95"
                         >
-                            <Edit3 size={16} /> Viết đánh giá
+                            <Edit3 size={14} /> <span className="hidden sm:inline">Viết đánh giá</span>
                         </button>
                     </div>
 
                     {showReviewForm && (
-                        <div className="mb-10 bg-white rounded-3xl p-8 border border-gray-100 shadow-lg animate-fade-in-up">
+                        <div className="mb-10 bg-white rounded-3xl p-6 lg:p-8 border border-gray-100 shadow-lg animate-fade-in-up">
                             <form onSubmit={handleSubmitReview} className="space-y-6">
+                                {/* Form content same as before */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-gray-700">Tên hiển thị</label>
@@ -630,32 +693,60 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                     )}
 
                     {product.reviews && product.reviews.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-6">
-                            {product.reviews.map((review) => (
-                                <div key={review.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-5">
-                                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shrink-0 shadow-md" style={{ backgroundColor: theme.color }}>
-                                        {review.user.charAt(0).toUpperCase()}
+                        <>
+                            {/* Desktop: Vertical Grid */}
+                            <div className="hidden lg:grid grid-cols-1 gap-6">
+                                {product.reviews.map((review) => (
+                                    <div key={review.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-5">
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shrink-0 shadow-md" style={{ backgroundColor: theme.color }}>
+                                            {review.user.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="font-bold text-gray-900 text-lg">{review.user}</div>
+                                                <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">{review.date}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 mb-3">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} size={16} fill={i < review.rating ? "#FBBF24" : "none"} stroke={i < review.rating ? "none" : "#E5E7EB"} />
+                                                ))}
+                                            </div>
+                                            <p className="text-gray-600 leading-relaxed font-medium">"{review.comment}"</p>
+                                            <div className="mt-3 flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 w-fit px-2 py-1 rounded">
+                                                <CheckCircle2 size={12} /> Đã mua: {review.purchasedType || 'Gói mặc định'}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="font-bold text-gray-900 text-lg">{review.user}</div>
-                                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">{review.date}</span>
+                                ))}
+                            </div>
+
+                            {/* Mobile: Horizontal Swipe Cards */}
+                            <div className="lg:hidden flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 snap-x snap-mandatory no-scrollbar">
+                                {product.reviews.map((review) => (
+                                    <div key={review.id} className="snap-center bg-white p-5 rounded-[1.5rem] border border-gray-100 shadow-sm flex flex-col gap-3 min-w-[280px] max-w-[280px]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-md" style={{ backgroundColor: theme.color }}>
+                                                {review.user.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-gray-900 text-sm truncate w-32">{review.user}</div>
+                                                <div className="flex items-center gap-0.5">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} size={10} fill={i < review.rating ? "#FBBF24" : "none"} stroke={i < review.rating ? "none" : "#E5E7EB"} />
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1 mb-3">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star key={i} size={16} fill={i < review.rating ? "#FBBF24" : "none"} stroke={i < review.rating ? "none" : "#E5E7EB"} />
-                                            ))}
-                                        </div>
-                                        <p className="text-gray-600 leading-relaxed font-medium">"{review.comment}"</p>
-                                        <div className="mt-3 flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 w-fit px-2 py-1 rounded">
-                                            <CheckCircle2 size={12} /> Đã mua: {review.purchasedType || 'Gói mặc định'}
+                                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">"{review.comment}"</p>
+                                        <div className="mt-auto text-[10px] font-bold text-gray-400">
+                                            {review.date}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        </>
                     ) : (
-                        <div className="text-center py-16 bg-white rounded-[2.5rem] border border-dashed border-gray-200">
+                        <div className="text-center py-16 bg-white rounded-[2rem] border border-dashed border-gray-200">
                             <p className="text-gray-500 font-medium">Chưa có đánh giá nào.</p>
                         </div>
                     )}
@@ -666,27 +757,36 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
 
         {/* RELATED PRODUCTS */}
         {relatedProducts.length > 0 && (
-           <div className="mt-24 max-w-7xl mx-auto border-t border-gray-200 pt-16">
-              <div className="flex items-center justify-between mb-10">
-                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Sản phẩm tương tự</h2>
-                  <Link to="/products" className="text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-1">
+           <div className="mt-16 lg:mt-24 max-w-7xl mx-auto border-t border-gray-200 pt-12 lg:pt-16">
+              <div className="flex items-center justify-between mb-6 lg:mb-10">
+                  <h2 className="text-xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">Sản phẩm tương tự</h2>
+                  <Link to="/products" className="text-xs lg:text-sm font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-1">
                       Xem tất cả <ChevronRight size={16} />
                   </Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              
+              {/* Desktop Grid */}
+              <div className="hidden lg:grid grid-cols-2 md:grid-cols-4 gap-6">
                  {relatedProducts.map(p => (
                     <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
                  ))}
+              </div>
+
+              {/* Mobile Horizontal Snap */}
+              <div className="lg:hidden flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar -mx-4 px-4">
+                  {relatedProducts.map((p) => (
+                      <MobileProductCard key={p.id} product={p} onAddToCart={addToCart} />
+                  ))}
               </div>
            </div>
         )}
       </div>
 
-      {/* --- STICKY ACTION BAR (BOTTOM FOR MOBILE, TOP FOR DESKTOP - IMPLEMENTED AS BOTTOM FIXED FOR CONVERSION) --- */}
+      {/* --- SMART STICKY ACTION BAR (IMPROVED FOR MOBILE) --- */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-gray-200 shadow-[0_-5px_30px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`fixed bottom-[72px] lg:bottom-0 left-0 right-0 z-40 lg:z-50 bg-white/80 backdrop-blur-xl border-t border-gray-200 shadow-[0_-5px_30px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out ${showStickyBar ? 'translate-y-0' : 'translate-y-full lg:translate-y-full'}`}
       >
-         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+         <div className="max-w-7xl mx-auto px-4 py-3 lg:py-4 flex items-center justify-between gap-3 lg:gap-4">
              {/* Left: Product Info (Desktop) */}
              <div className="hidden sm:flex items-center gap-3">
                  <img src={mainImageSrc} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-100 border border-gray-200" />
@@ -696,29 +796,27 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                  </div>
              </div>
 
-             {/* Right: Price & Button */}
-             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                 <div className="flex flex-col items-end">
-                     <span className="text-lg font-extrabold text-gray-900">
+             {/* Right: Price & Button (Mobile Optimized) */}
+             <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                 <div className="flex flex-col items-start lg:items-end">
+                     <span className="text-base lg:text-lg font-extrabold text-gray-900">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
                      </span>
                      {currentDiscount > 0 && (
-                         <span className="text-xs text-gray-400 line-through font-medium">
+                         <span className="text-[10px] lg:text-xs text-gray-400 line-through font-medium">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentOriginalPrice)}
                          </span>
                      )}
                  </div>
                  <button 
                     onClick={handleAddToCart}
-                    className="px-8 py-3 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                    className="flex-1 lg:flex-none px-6 py-3 lg:px-8 lg:py-3 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-sm lg:text-base"
                     style={{ backgroundColor: theme.color, boxShadow: `0 5px 20px -5px ${theme.color}60` }}
                  >
                     <ShoppingCart size={18} /> Mua ngay
                  </button>
              </div>
          </div>
-         {/* Safe Area for Mobile */}
-         <div className="h-safe-bottom w-full bg-white/80"></div>
       </div>
 
     </div>
