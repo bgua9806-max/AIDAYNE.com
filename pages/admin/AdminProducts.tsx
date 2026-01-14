@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, X, Save, Image as ImageIcon, Layers, FileText, Monitor, ShieldCheck, List, DollarSign } from 'lucide-react';
 import { CATEGORIES } from '../../constants';
@@ -284,7 +285,7 @@ export const AdminProducts: React.FC = () => {
               </div>
 
               {/* Form Content */}
-              <div className="p-8 overflow-y-auto bg-gray-50/50">
+              <div className="p-8 overflow-y-auto bg-gray-50/50 flex-1">
                  <form id="productForm" onSubmit={handleSave} className="space-y-6">
                     
                     {/* TAB: GENERAL */}
