@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -20,37 +20,47 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // Search State
+  // Command Palette State
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchSource, setSearchSource] = useState<Product[]>([]); // Store fetched products
-  const searchRef = useRef<HTMLDivElement>(null);
-
+  const [searchSource, setSearchSource] = useState<Product[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
+  // Load Data & Events
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    
+    // Keyboard Shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandOpen(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        setIsCommandOpen(false);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
     
-    // Fetch live products for search suggestions
+    // Load Recent Searches
+    const saved = localStorage.getItem('recent_searches');
+    if (saved) setRecentSearches(JSON.parse(saved));
+
+    // Fetch Products for Search
     const fetchSearchData = async () => {
         try {
             const { data } = await supabase.from('products').select('*');
             if (data && data.length > 0) {
-                // Map to handle missing images if any, using fallback logic
+                // Map to handle missing images
                 const mapped = data.map((p: any) => {
                     if (!p.image) {
                         const fallback = PRODUCTS.find(fp => String(fp.id) === String(p.id));
@@ -60,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                 });
                 setSearchSource(mapped);
             } else {
-                setSearchSource(PRODUCTS); // Fallback if DB empty (optional, but safer)
+                setSearchSource(PRODUCTS);
             }
         } catch (e) {
             setSearchSource(PRODUCTS);
@@ -70,46 +80,77 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isCommandOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+      setSearchQuery('');
+      setSuggestions([]);
+      setSelectedIndex(0);
+    }
+  }, [isCommandOpen]);
+
   const isActive = (path: string) => location.pathname === path;
 
+  // Search Logic
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
+    setSelectedIndex(0);
 
     if (query.trim().length > 0) {
-      const cleanQuery = slugify(query); // Chuẩn hóa từ khóa tìm kiếm (bỏ dấu)
-      
+      const cleanQuery = slugify(query);
       const filtered = searchSource.filter(product => {
-        // Chuẩn hóa tên sản phẩm và tìm kiếm
         const pName = slugify(product.name);
-        return pName.includes(cleanQuery);
-      }).slice(0, 5);
-      
+        const pCat = slugify(product.category);
+        return pName.includes(cleanQuery) || pCat.includes(cleanQuery);
+      }).slice(0, 5); // Limit 5 results
       setSuggestions(filtered);
-      setShowSuggestions(true);
     } else {
       setSuggestions([]);
-      setShowSuggestions(false);
     }
   };
 
-  const handleSuggestionClick = (product: Product) => {
-    navigate(`/product/${product.slug || slugify(product.name)}`);
-    setSearchQuery('');
-    setShowSuggestions(false);
-    setIsMobileMenuOpen(false); // Close mobile menu if open
+  const saveRecentSearch = (term: string) => {
+      // Don't save if it's a product name click, usually user wants to save typed queries. 
+      // But here let's save the query if manually typed.
+      if (!term.trim()) return;
+      const newRecent = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+      setRecentSearches(newRecent);
+      localStorage.setItem('recent_searches', JSON.stringify(newRecent));
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (searchQuery.trim()) {
+  const handleProductSelect = (product: Product) => {
+    navigate(`/product/${product.slug || slugify(product.name)}`);
+    setIsCommandOpen(false);
+    setIsMobileMenuOpen(false);
+    saveRecentSearch(product.name);
+  };
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (suggestions.length > 0) {
+          handleProductSelect(suggestions[selectedIndex]);
+      } else if (searchQuery.trim()) {
           navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
-          setIsMobileMenuOpen(false);
-          setShowSuggestions(false);
+          setIsCommandOpen(false);
+          saveRecentSearch(searchQuery);
+      }
+  };
+
+  const handleKeyDownInInput = (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedIndex(prev => (prev + 1) % (suggestions.length || 1));
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedIndex(prev => (prev - 1 + (suggestions.length || 1)) % (suggestions.length || 1));
+      } else if (e.key === 'Enter') {
+          handleSearchSubmit();
       }
   };
 
@@ -117,6 +158,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     await signOut();
     navigate('/login');
   };
+
+  const trendingProducts = searchSource.filter(p => p.isHot).slice(0, 4);
 
   return (
     <>
@@ -173,52 +216,31 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
               </div>
             </div>
 
-            {/* Search Bar - Center (Desktop Only) */}
-            <div className="flex-1 max-w-md mx-auto hidden lg:block" ref={searchRef}>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className="text-gray-400 group-focus-within:text-primary transition-colors" />
+            {/* Smart Command Trigger (Desktop) */}
+            <div className="flex-1 max-w-md mx-auto hidden lg:block">
+              <button 
+                onClick={() => setIsCommandOpen(true)}
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-100/80 hover:bg-white border border-transparent hover:border-gray-200 rounded-xl text-sm text-gray-500 transition-all duration-300 group shadow-inner hover:shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                   <Search size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
+                   <span className="font-medium group-hover:text-gray-900">Tìm kiếm sản phẩm...</span>
                 </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onFocus={() => { if (searchQuery.trim().length > 0) setShowSuggestions(true); }}
-                  className="block w-full pl-10 pr-4 py-2 bg-gray-100/80 border-transparent rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary/50 transition-all duration-300 text-sm"
-                  placeholder="Search tools, accounts..."
-                />
-                
-                {/* Suggestions */}
-                {showSuggestions && searchQuery.trim().length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-                    {suggestions.length > 0 ? (
-                      <div className="py-2">
-                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Suggestions</div>
-                        {suggestions.map((product) => (
-                          <div 
-                            key={product.id}
-                            onClick={() => handleSuggestionClick(product)}
-                            className="px-4 py-3 hover:bg-blue-50/50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors"
-                          >
-                            <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shadow-sm" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-900 truncate">{product.name}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center">
-                        <p className="text-gray-500 text-xs">Không tìm thấy sản phẩm nào.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[10px] font-bold text-gray-400 font-mono">
+                   <Command size={10} /> K
+                </div>
+              </button>
             </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2">
+              <button 
+                onClick={() => setIsCommandOpen(true)} 
+                className="lg:hidden p-2 text-gray-800 hover:text-primary transition-colors"
+              >
+                <Search size={20} strokeWidth={2} />
+              </button>
+
               <Link to="/admin" className="hidden sm:flex items-center p-2 text-gray-500 hover:text-black transition-all" title="Admin">
                   <LayoutDashboard size={20} strokeWidth={1.5} />
               </Link>
@@ -280,6 +302,127 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
         </div>
       </nav>
 
+      {/* --- SMART COMMAND PALETTE (MODAL) --- */}
+      {isCommandOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+           {/* Backdrop */}
+           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCommandOpen(false)}></div>
+           
+           {/* Modal Panel */}
+           <div className="relative w-full max-w-2xl bg-white/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col animate-fade-in-up">
+              
+              {/* Search Header */}
+              <div className="flex items-center gap-4 p-5 border-b border-gray-200/50 bg-white/50">
+                 <Search size={22} className="text-gray-400" />
+                 <input 
+                    ref={searchInputRef}
+                    type="text" 
+                    placeholder="Tìm kiếm phần mềm, tài khoản..." 
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleKeyDownInInput}
+                    className="flex-1 bg-transparent border-none text-xl font-medium text-gray-900 placeholder-gray-400 focus:ring-0 p-0"
+                 />
+                 <button 
+                    onClick={() => setIsCommandOpen(false)}
+                    className="px-2 py-1 bg-gray-200 rounded text-[10px] font-bold text-gray-500 uppercase tracking-wide hover:bg-gray-300 transition-colors"
+                 >
+                    Esc
+                 </button>
+              </div>
+
+              {/* Content Body */}
+              <div className="max-h-[60vh] overflow-y-auto p-2">
+                 
+                 {/* STATE 1: Search Results */}
+                 {searchQuery.trim().length > 0 ? (
+                    <div>
+                        {suggestions.length > 0 ? (
+                           <>
+                              <div className="px-4 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Gợi ý sản phẩm</div>
+                              {suggestions.map((p, idx) => (
+                                 <div 
+                                    key={p.id}
+                                    onClick={() => handleProductSelect(p)}
+                                    className={`flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all ${idx === selectedIndex ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-[1.01]' : 'hover:bg-gray-100 text-gray-900'}`}
+                                 >
+                                    <img src={p.image} alt="" className={`w-10 h-10 rounded-lg object-cover ${idx === selectedIndex ? 'bg-white/20' : 'bg-gray-100'}`} />
+                                    <div className="flex-1 min-w-0">
+                                       <div className="font-bold text-sm truncate">{p.name}</div>
+                                       <div className={`text-xs ${idx === selectedIndex ? 'text-white/80' : 'text-gray-500'}`}>{p.category}</div>
+                                    </div>
+                                    <div className={`font-bold text-sm ${idx === selectedIndex ? 'text-white' : 'text-primary'}`}>
+                                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}
+                                    </div>
+                                    {idx === selectedIndex && <CornerDownLeft size={16} className="text-white/70" />}
+                                 </div>
+                              ))}
+                           </>
+                        ) : (
+                           <div className="py-12 text-center text-gray-500">
+                              <p>Không tìm thấy kết quả nào cho "{searchQuery}"</p>
+                           </div>
+                        )}
+                    </div>
+                 ) : (
+                    /* STATE 2: Zero State (Recent & Trending) */
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {/* Recent Searches */}
+                        {recentSearches.length > 0 && (
+                           <div className="p-2">
+                              <h4 className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                 <Clock size={12} /> Gần đây
+                              </h4>
+                              {recentSearches.map((term, i) => (
+                                 <div 
+                                    key={i} 
+                                    onClick={() => { setSearchQuery(term); handleSearchChange({ target: { value: term } } as any) }}
+                                    className="px-3 py-2.5 rounded-xl hover:bg-gray-100 text-sm font-medium text-gray-600 cursor-pointer transition-colors flex items-center justify-between group"
+                                 >
+                                    {term}
+                                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+
+                        {/* Trending */}
+                        <div className="p-2">
+                           <h4 className="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                              <TrendingUp size={12} /> Xu hướng
+                           </h4>
+                           {trendingProducts.map(p => (
+                              <div 
+                                 key={p.id}
+                                 onClick={() => handleProductSelect(p)}
+                                 className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 cursor-pointer transition-colors"
+                              >
+                                 <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
+                                    <img src={p.image} alt="" className="w-full h-full object-cover" />
+                                 </div>
+                                 <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-xs text-gray-900 truncate group-hover:text-primary transition-colors">{p.name}</div>
+                                 </div>
+                                 <ChevronRight size={14} className="text-gray-300 group-hover:text-primary transition-colors" />
+                              </div>
+                           ))}
+                        </div>
+                    </div>
+                 )}
+              </div>
+              
+              {/* Footer */}
+              <div className="bg-gray-50 border-t border-gray-200/60 px-5 py-3 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                 <div className="flex gap-4">
+                    <span><span className="bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 mr-1">↑↓</span> Di chuyển</span>
+                    <span><span className="bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 mr-1">↵</span> Chọn</span>
+                 </div>
+                 <span>AIDAYNE Search</span>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden animate-fade-in">
@@ -295,35 +438,14 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                  </button>
               </div>
 
-              {/* Mobile Search - Added as requested */}
-              <div className="mb-8">
-                  <form onSubmit={handleSearchSubmit} className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input 
-                          type="text" 
-                          placeholder="Tìm sản phẩm..." 
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      />
-                      {searchQuery && (
-                          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary text-white p-1 rounded-md">
-                              <ArrowRight size={14} />
-                          </button>
-                      )}
-                  </form>
-                  {/* Mobile Suggestions */}
-                  {suggestions.length > 0 && searchQuery && (
-                      <div className="mt-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                          {suggestions.map(p => (
-                              <div key={p.id} onClick={() => handleSuggestionClick(p)} className="flex items-center gap-3 p-3 border-b border-gray-50 last:border-0 active:bg-gray-50">
-                                  <img src={p.image} alt="" className="w-8 h-8 rounded-md bg-gray-100 object-cover" />
-                                  <span className="text-sm font-medium text-gray-900 truncate">{p.name}</span>
-                              </div>
-                          ))}
-                      </div>
-                  )}
-              </div>
+              {/* Mobile Search Button triggers Command Palette logic */}
+              <button 
+                 onClick={() => { setIsMobileMenuOpen(false); setIsCommandOpen(true); }}
+                 className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-500 mb-8"
+              >
+                 <Search size={18} />
+                 Tìm kiếm sản phẩm...
+              </button>
 
               <div className="space-y-6">
                 <div>

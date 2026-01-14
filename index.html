@@ -22,14 +22,34 @@
       /* Apple System Font Stack for that "Native" feel */
       body {
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        background-color: #F5F5F7; /* Genuine Apple background gray */
+        background-color: #F5F5F7;
         color: #1D1D1F;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        letter-spacing: -0.011em; /* Tighter tracking for premium look */
+        letter-spacing: -0.015em; /* Tighter tracking for premium look */
         overscroll-behavior-y: none; /* Prevent bounce on Mac */
+        
+        /* Animated Mesh Gradient Background */
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(210, 100%, 96%, 1) 0px, transparent 50%),
+          radial-gradient(at 50% 0%, hsla(220, 100%, 97%, 1) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, hsla(200, 100%, 96%, 1) 0px, transparent 50%);
+        background-size: 200% 200%;
+        animation: gradient-move 15s ease infinite;
+      }
+
+      @keyframes gradient-move {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
       }
       
+      /* Refined Typography */
+      h1, h2, h3, h4, h5, h6 {
+        letter-spacing: -0.03em; /* Apple-style tight headings */
+        font-weight: 800; /* Extra bold for headings */
+      }
+
       /* Hide scrollbar but keep functionality */
       .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -41,16 +61,18 @@
 
       /* Advanced Glassmorphism Utilities */
       .glass {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: saturate(180%) blur(20px);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: saturate(180%) blur(24px);
+        -webkit-backdrop-filter: saturate(180%) blur(24px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
       }
       
       .glass-dark {
-        background: rgba(29, 29, 31, 0.72);
-        backdrop-filter: saturate(180%) blur(20px);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        background: rgba(22, 22, 24, 0.75);
+        backdrop-filter: saturate(180%) blur(24px);
+        -webkit-backdrop-filter: saturate(180%) blur(24px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       /* Smooth Animations */
@@ -58,10 +80,10 @@
         transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
       .hover-scale:hover {
-        transform: scale(1.03);
+        transform: scale(1.02);
       }
       .active-scale:active {
-        transform: scale(0.97);
+        transform: scale(0.98);
       }
       
       /* Apple-style Buttons */
@@ -90,9 +112,9 @@
         theme: {
           extend: {
             colors: {
-              primary: '#0071E3', /* Apple Blue - Professional & Trust */
+              primary: '#0071E3', /* Apple Blue */
               'primary-hover': '#0077ED',
-              accent: '#FF2D55', /* Apple Pink/Red for Sale/Hot */
+              accent: '#FF2D55', /* Apple Pink/Red */
               secondary: '#1D1D1F', /* Apple Black */
               'gray-bg': '#F5F5F7',
               'gray-text': '#86868B',
@@ -102,10 +124,11 @@
               '4xl': '2.25rem',
             },
             boxShadow: {
-              'soft': '0 4px 24px rgba(0,0,0,0.04)',
-              'hover': '0 12px 32px rgba(0,0,0,0.08)',
+              'soft': '0 8px 40px rgba(0,0,0,0.04)',
+              'hover': '0 20px 40px rgba(0,0,0,0.08)',
               'glow': '0 0 20px rgba(0, 113, 227, 0.3)',
-              'apple': '0 8px 30px rgba(0,0,0,0.12)',
+              'apple': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+              'float': '0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05)',
             },
             animation: {
               'fade-in': 'fadeIn 0.6s ease-out forwards',

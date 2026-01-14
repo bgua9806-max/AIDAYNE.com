@@ -4,6 +4,8 @@ export interface Variant {
   name: string; // Ví dụ: "1 Tháng", "1 Năm", "Vĩnh viễn"
   price: number;
   originalPrice: number;
+  stock?: number; // Số lượng tồn kho
+  sku?: string;   // Mã định danh kho
 }
 
 export interface Review {
@@ -31,6 +33,7 @@ export interface Product {
   sold: number;
   isHot?: boolean;
   isNew?: boolean;
+  isActive?: boolean; // Trạng thái Ẩn/Hiện
   
   // Các trường bổ sung
   platforms?: string[]; // Ví dụ: ['windows', 'mac', 'ios', 'android']

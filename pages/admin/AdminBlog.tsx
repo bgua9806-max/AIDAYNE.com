@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, X, Save, Image as ImageIcon, Clock, AlignLeft, Bold, Italic, Heading1, Heading2, Link as LinkIcon, List } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, X, Save, Image as ImageIcon, Clock, AlignLeft, Bold, Italic, Heading1, Heading2, Link as LinkIcon, List, Quote, Globe, ChevronLeft } from 'lucide-react';
 import { BlogPost } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { slugify } from '../../lib/utils';
 
 export const AdminBlog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -242,183 +243,187 @@ export const AdminBlog: React.FC = () => {
 
       {/* MODAL EDITOR */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
            {/* Backdrop */}
            <div 
              className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
              onClick={() => setIsModalOpen(false)}
            ></div>
 
-           {/* Modal Content */}
-           <div className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col relative z-10 shadow-2xl animate-fade-in-up">
+           {/* Modal Content - Full Screen / Large */}
+           <div className="bg-white rounded-[2rem] w-full max-w-[90vw] h-[90vh] overflow-hidden flex flex-col relative z-10 shadow-2xl animate-fade-in-up">
               
               {/* Header */}
-              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-20">
-                 <div>
-                    <h3 className="text-xl font-extrabold text-gray-900">{isEditing ? 'Chỉnh sửa bài viết' : 'Viết bài mới'}</h3>
-                    <p className="text-xs text-gray-500 mt-1">Sử dụng thanh công cụ để định dạng bài viết.</p>
+              <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-20">
+                 <div className="flex items-center gap-4">
+                    <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ChevronLeft size={24} className="text-gray-500" /></button>
+                    <div>
+                        <h3 className="text-xl font-extrabold text-gray-900">{isEditing ? 'Chỉnh sửa bài viết' : 'Viết bài mới'}</h3>
+                        <p className="text-xs text-gray-500">Tự động lưu nháp...</p>
+                    </div>
                  </div>
-                 <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                 >
-                    <X size={24} />
-                 </button>
+                 <div className="flex items-center gap-3">
+                     <button 
+                        onClick={() => setIsModalOpen(false)}
+                        className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+                     >
+                        Đóng
+                     </button>
+                     <button 
+                        onClick={handleSave}
+                        className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-primary-hover flex items-center gap-2"
+                     >
+                        <Save size={18} />
+                        {isEditing ? 'Lưu thay đổi' : 'Đăng bài'}
+                     </button>
+                 </div>
               </div>
 
-              {/* Form Body */}
-              <div className="p-8 overflow-y-auto bg-gray-50/50">
-                 <form id="blogForm" onSubmit={handleSave} className="space-y-6">
-                    {/* Title */}
-                    <div>
-                       <label className="block text-sm font-bold text-gray-700 mb-2">Tiêu đề (Luôn In Đậm)</label>
-                       <input 
-                         type="text" 
-                         name="title"
-                         required
-                         value={formData.title || ''}
-                         onChange={handleChange}
-                         placeholder="Nhập tiêu đề bài viết tại đây..."
-                         className="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-extrabold text-xl text-gray-900 shadow-sm"
-                       />
-                    </div>
+              {/* Editor Body - Split View */}
+              <div className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-[#F9FAFB]">
+                 
+                 {/* LEFT: MAIN EDITOR */}
+                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                     <div className="max-w-3xl mx-auto space-y-6">
+                        {/* Title Input */}
+                        <input 
+                            type="text" 
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            placeholder="Tiêu đề bài viết..."
+                            className="w-full bg-transparent border-none text-4xl font-extrabold text-gray-900 placeholder-gray-300 focus:ring-0 p-0 leading-tight"
+                        />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {/* Category */}
-                       <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Danh mục</label>
-                          <select 
-                             name="category"
-                             value={formData.category}
-                             onChange={handleChange}
-                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                          >
-                             <option value="Công nghệ AI">Công nghệ AI</option>
-                             <option value="Thủ thuật">Thủ thuật</option>
-                             <option value="Đánh giá">Đánh giá</option>
-                             <option value="Bảo mật">Bảo mật</option>
-                             <option value="Tin tức">Tin tức</option>
-                          </select>
-                       </div>
+                        {/* Toolbar - Sticky */}
+                        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl p-1.5 flex items-center gap-1 shadow-sm w-fit">
+                              <button type="button" onClick={() => insertAtCursor('<b>', '</b>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="In đậm"><Bold size={18} /></button>
+                              <button type="button" onClick={() => insertAtCursor('<i>', '</i>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="In nghiêng"><Italic size={18} /></button>
+                              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                              <button type="button" onClick={() => insertAtCursor('<h2>', '</h2>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Tiêu đề H2"><Heading1 size={18} /></button>
+                              <button type="button" onClick={() => insertAtCursor('<h3>', '</h3>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Tiêu đề H3"><Heading2 size={18} /></button>
+                              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                              <button type="button" onClick={() => insertAtCursor('<blockquote>', '</blockquote>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Trích dẫn"><Quote size={18} /></button>
+                              <button type="button" onClick={() => insertAtCursor('<ul>\n<li>', '</li>\n</ul>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Danh sách"><List size={18} /></button>
+                              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                              <button type="button" onClick={() => insertAtCursor('<a href="url">', '</a>')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Link"><LinkIcon size={18} /></button>
+                              <button type="button" onClick={handleInsertImage} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-all" title="Chèn Ảnh"><ImageIcon size={18} /></button>
+                        </div>
 
-                       {/* Read Time */}
-                       <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Thời gian đọc</label>
-                          <div className="relative">
-                             <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                             <input 
-                               type="text" 
-                               name="readTime"
-                               value={formData.readTime || ''}
-                               onChange={handleChange}
-                               placeholder="VD: 5 phút"
-                               className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                             />
-                          </div>
-                       </div>
-                    </div>
-
-                    {/* Image URL */}
-                    <div>
-                       <label className="block text-sm font-bold text-gray-700 mb-2">Link ảnh bìa (URL)</label>
-                       <div className="flex gap-4">
-                          <div className="relative flex-1">
-                             <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                             <input 
-                               type="text" 
-                               name="image"
-                               required
-                               value={formData.image || ''}
-                               onChange={handleChange}
-                               placeholder="https://example.com/image.jpg"
-                               className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                             />
-                          </div>
-                          {formData.image && (
-                             <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden border border-gray-200 shrink-0">
-                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                             </div>
-                          )}
-                       </div>
-                    </div>
-
-                    {/* Excerpt */}
-                    <div>
-                       <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả ngắn (Sapo)</label>
-                       <textarea 
-                         name="excerpt"
-                         rows={2}
-                         required
-                         value={formData.excerpt || ''}
-                         onChange={handleChange}
-                         placeholder="Đoạn tóm tắt ngắn gọn hiển thị ở danh sách..."
-                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium resize-none shadow-sm"
-                       ></textarea>
-                    </div>
-
-                    {/* Content (RICH TEXT SIMULATOR) */}
-                    <div>
-                       <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                          <AlignLeft size={18} /> Nội dung chi tiết
-                       </label>
-                       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                          {/* Toolbar */}
-                          <div className="flex items-center gap-1 p-2 border-b border-gray-100 bg-gray-50">
-                              <button type="button" onClick={() => insertAtCursor('<b>', '</b>')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="In đậm"><Bold size={18} /></button>
-                              <button type="button" onClick={() => insertAtCursor('<i>', '</i>')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="In nghiêng"><Italic size={18} /></button>
-                              <div className="w-px h-5 bg-gray-300 mx-1"></div>
-                              <button type="button" onClick={() => insertAtCursor('<h2>', '</h2>')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="Tiêu đề H2"><Heading1 size={18} /></button>
-                              <button type="button" onClick={() => insertAtCursor('<h3>', '</h3>')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="Tiêu đề H3"><Heading2 size={18} /></button>
-                              <div className="w-px h-5 bg-gray-300 mx-1"></div>
-                              <button type="button" onClick={() => insertAtCursor('<ul>\n<li>', '</li>\n</ul>')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="Danh sách"><List size={18} /></button>
-                              <button type="button" onClick={handleInsertImage} className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all" title="Chèn Ảnh"><ImageIcon size={18} /></button>
-                          </div>
-
-                          <textarea 
+                        {/* Content Textarea */}
+                        <textarea 
                             ref={textareaRef}
                             name="content"
-                            rows={15}
-                            required
                             value={formData.content || ''}
                             onChange={handleChange}
-                            placeholder={`Viết nội dung tại đây...\n\nSử dụng các nút trên để chèn ảnh và định dạng văn bản.`}
-                            className="w-full px-6 py-5 bg-white border-none focus:outline-none transition-all font-sans text-base leading-relaxed resize-none"
-                          ></textarea>
-                       </div>
-                    </div>
+                            placeholder="Bắt đầu viết nội dung tuyệt vời..."
+                            className="w-full min-h-[60vh] bg-transparent border-none focus:ring-0 p-0 text-lg leading-relaxed text-gray-700 resize-none font-medium"
+                        ></textarea>
+                     </div>
+                 </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Author */}
-                        <div>
-                           <label className="block text-sm font-bold text-gray-700 mb-2">Tác giả</label>
-                           <input 
-                              type="text" 
-                              name="author"
-                              value={formData.author || ''}
-                              onChange={handleChange}
-                              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                           />
+                 {/* RIGHT: SETTINGS & SEO */}
+                 <div className="w-full lg:w-[400px] border-l border-gray-200 bg-white overflow-y-auto p-6 space-y-8 custom-scrollbar shrink-0">
+                     
+                     {/* SEO Preview Card */}
+                     <div className="space-y-3">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <Globe size={14} /> Google Search Preview
+                        </h3>
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <span className="font-bold text-[10px] text-gray-500">A</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[11px] text-gray-800 font-medium leading-none">AIDAYNE.com</span>
+                                    <span className="text-[10px] text-gray-500 leading-none mt-0.5">https://aidayne.com › blog › {slugify(formData.title || 'tieu-de-bai-viet').slice(0, 30)}...</span>
+                                </div>
+                            </div>
+                            <div className="text-xl text-[#1a0dab] font-medium hover:underline cursor-pointer truncate font-sans">
+                                {formData.title || 'Tiêu đề bài viết sẽ hiện ở đây'}
+                            </div>
+                            <div className="text-sm text-[#4d5156] line-clamp-2 mt-1 font-sans">
+                                {formData.excerpt || 'Mô tả ngắn của bài viết (Meta Description) sẽ hiển thị ở đây. Hãy viết thật hấp dẫn để tăng tỉ lệ click.'}
+                            </div>
                         </div>
-                    </div>
-                 </form>
-              </div>
+                     </div>
 
-              {/* Footer Actions */}
-              <div className="px-8 py-5 border-t border-gray-100 bg-white flex items-center justify-end gap-3 sticky bottom-0 z-20">
-                 <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
-                 >
-                    Hủy bỏ
-                 </button>
-                 <button 
-                    form="blogForm"
-                    type="submit"
-                    className="px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-                 >
-                    <Save size={18} />
-                    {isEditing ? 'Lưu thay đổi' : 'Đăng bài viết'}
-                 </button>
+                     <div className="w-full h-px bg-gray-100"></div>
+
+                     {/* Settings */}
+                     <div className="space-y-5">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Cấu hình bài viết</h3>
+                        
+                        <div>
+                           <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả ngắn (Sapo)</label>
+                           <textarea 
+                             name="excerpt"
+                             rows={3}
+                             value={formData.excerpt || ''}
+                             onChange={handleChange}
+                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm"
+                           ></textarea>
+                        </div>
+
+                        <div>
+                           <label className="block text-sm font-bold text-gray-700 mb-2">Danh mục</label>
+                           <select 
+                              name="category"
+                              value={formData.category}
+                              onChange={handleChange}
+                              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                           >
+                              <option value="Công nghệ AI">Công nghệ AI</option>
+                              <option value="Thủ thuật">Thủ thuật</option>
+                              <option value="Đánh giá">Đánh giá</option>
+                              <option value="Bảo mật">Bảo mật</option>
+                              <option value="Tin tức">Tin tức</option>
+                              <option value="Thiết kế">Thiết kế</option>
+                           </select>
+                        </div>
+
+                        <div>
+                           <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh đại diện (URL)</label>
+                           <div className="relative">
+                               <input 
+                                 type="text" 
+                                 name="image"
+                                 value={formData.image || ''}
+                                 onChange={handleChange}
+                                 className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm truncate"
+                               />
+                               <div className="absolute right-2 top-2 w-8 h-8 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
+                                   {formData.image ? <img src={formData.image} className="w-full h-full object-cover" /> : <ImageIcon size={14} className="text-gray-400" />}
+                               </div>
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                               <label className="block text-sm font-bold text-gray-700 mb-2">Tác giả</label>
+                               <input 
+                                  type="text" 
+                                  name="author"
+                                  value={formData.author}
+                                  onChange={handleChange}
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                               />
+                            </div>
+                            <div>
+                               <label className="block text-sm font-bold text-gray-700 mb-2">Thời gian đọc</label>
+                               <input 
+                                  type="text" 
+                                  name="readTime"
+                                  value={formData.readTime}
+                                  onChange={handleChange}
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                               />
+                            </div>
+                        </div>
+                     </div>
+
+                 </div>
               </div>
 
            </div>
