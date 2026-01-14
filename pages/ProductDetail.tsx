@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product, Variant, Review } from '../types';
@@ -280,7 +279,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
 
   return (
     <div 
-        className="min-h-screen bg-[#F5F5F7] pb-64 lg:pb-24 font-sans selection:text-white"
+        className="min-h-screen bg-[#F5F5F7] pb-32 lg:pb-24 font-sans selection:text-white"
         style={{ '--theme-color': theme.color, 'selection-bg': theme.color } as React.CSSProperties}
     >
       <style>{`::selection { background-color: var(--theme-color); }`}</style>
@@ -480,38 +479,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                         <Info size={28} style={{ color: theme.color }} /> Thông tin chi tiết
                     </h2>
                     <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-gray-100">
-                        {/* Mobile Buy Button Placeholder logic moved to Sticky Bar */}
-                        <div className="lg:hidden mb-8">
-                            <h1 className="text-2xl font-extrabold text-gray-900 leading-tight mb-2">{product.name}</h1>
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className="text-3xl font-extrabold text-primary">
-                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
-                                </span>
-                                {currentDiscount > 0 && (
-                                    <span className="text-sm text-gray-400 line-through font-medium bg-gray-100 px-2 py-1 rounded">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentOriginalPrice)}
-                                    </span>
-                                )}
-                            </div>
-                            {/* Variant Selector Mobile */}
-                            {product.variants && product.variants.length > 0 && (
-                                <div className="space-y-2 mb-6">
-                                    <label className="text-xs font-bold text-gray-400 uppercase">Chọn gói</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {product.variants.map(v => (
-                                            <button
-                                                key={v.id}
-                                                onClick={() => setSelectedVariant(v)}
-                                                className={`px-4 py-2 rounded-xl text-sm font-bold border ${selectedVariant?.id === v.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200'}`}
-                                            >
-                                                {v.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
                         {/* Sapo */}
                         <div className="mb-10 p-8 rounded-3xl border border-dashed border-gray-200 bg-gray-50/50">
                             <div className="text-gray-800 font-medium leading-relaxed whitespace-pre-line text-lg">
@@ -715,24 +682,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
         )}
       </div>
 
-      {/* --- STICKY ACTION BAR (OPTIMIZED) --- */}
-      {/* Mobile: Floating Pill above Bottom Nav | Desktop: Fixed Bottom Bar */}
+      {/* --- STICKY ACTION BAR (BOTTOM FOR MOBILE, TOP FOR DESKTOP - IMPLEMENTED AS BOTTOM FIXED FOR CONVERSION) --- */}
       <div 
-        className={`
-            fixed z-40 transition-transform duration-300 ease-in-out
-            
-            /* Mobile Styles: Floating Pill above BottomNav (approx 72px height + padding) */
-            left-4 right-4 bottom-[90px] rounded-2xl bg-white/95 backdrop-blur-xl border border-white/50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)]
-            
-            /* Desktop Styles: Fixed Bar at Bottom */
-            lg:left-0 lg:right-0 lg:bottom-0 lg:rounded-none lg:border-t lg:border-gray-200 lg:bg-white/80 lg:shadow-[0_-5px_30px_rgba(0,0,0,0.1)]
-            
-            ${showStickyBar ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none lg:translate-y-full'}
-        `}
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-gray-200 shadow-[0_-5px_30px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}`}
       >
-         <div className="max-w-7xl mx-auto px-4 py-3 lg:py-4 flex items-center justify-between gap-4">
-             {/* Left: Product Info (Desktop Only) */}
-             <div className="hidden lg:flex items-center gap-3">
+         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+             {/* Left: Product Info (Desktop) */}
+             <div className="hidden sm:flex items-center gap-3">
                  <img src={mainImageSrc} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-100 border border-gray-200" />
                  <div>
                      <div className="font-bold text-gray-900 text-sm line-clamp-1">{product.name}</div>
@@ -740,29 +696,29 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
                  </div>
              </div>
 
-             {/* Right: Price & Button (Responsive) */}
-             <div className="flex items-center gap-3 lg:gap-4 w-full lg:w-auto justify-between lg:justify-end">
-                 <div className="flex flex-col items-start lg:items-end">
-                     <span className="text-lg lg:text-xl font-extrabold text-gray-900">
+             {/* Right: Price & Button */}
+             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                 <div className="flex flex-col items-end">
+                     <span className="text-lg font-extrabold text-gray-900">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
                      </span>
                      {currentDiscount > 0 && (
-                         <span className="text-[10px] lg:text-xs text-gray-400 line-through font-medium">
+                         <span className="text-xs text-gray-400 line-through font-medium">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentOriginalPrice)}
                          </span>
                      )}
                  </div>
                  <button 
                     onClick={handleAddToCart}
-                    className="flex-1 lg:flex-none px-6 lg:px-8 py-3 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="px-8 py-3 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2"
                     style={{ backgroundColor: theme.color, boxShadow: `0 5px 20px -5px ${theme.color}60` }}
                  >
                     <ShoppingCart size={18} /> Mua ngay
                  </button>
              </div>
          </div>
-         {/* Safe Area for Desktop */}
-         <div className="hidden lg:block h-safe-bottom w-full bg-white/80"></div>
+         {/* Safe Area for Mobile */}
+         <div className="h-safe-bottom w-full bg-white/80"></div>
       </div>
 
     </div>
