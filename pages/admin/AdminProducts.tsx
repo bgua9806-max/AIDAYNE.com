@@ -91,7 +91,7 @@ export const AdminProducts: React.FC = () => {
               setProducts(prev => prev.filter(p => !selectedIds.has(p.id)));
               setSelectedIds(new Set());
           } else {
-              alert('Lỗi xóa: ' + error.message);
+              alert('Lỗi xóa: ' + (error?.message || 'Lỗi không xác định'));
           }
       }
   };
@@ -105,7 +105,7 @@ export const AdminProducts: React.FC = () => {
       
       const { error } = await supabase.from('products').update({ isActive: status }).in('id', ids);
       if (error) {
-          alert('Lỗi cập nhật: ' + error.message);
+          alert('Lỗi cập nhật: ' + (error?.message || 'Lỗi không xác định'));
           fetchProducts(); // Revert
       } else {
           setSelectedIds(new Set());
@@ -137,7 +137,7 @@ export const AdminProducts: React.FC = () => {
         if (!error) {
             setProducts(products.filter(p => p.id !== id));
         } else {
-            alert('Lỗi khi xóa sản phẩm: ' + error.message);
+            alert('Lỗi khi xóa sản phẩm: ' + (error?.message || 'Lỗi không xác định'));
         }
     }
   };
@@ -175,7 +175,15 @@ export const AdminProducts: React.FC = () => {
         setIsModalOpen(false);
     } catch (error: any) {
         console.error("Save error:", error);
-        const errorMessage = error?.message || error?.error_description || JSON.stringify(error);
+        // Robust error formatting to prevent [object Object]
+        let errorMessage = 'Lỗi không xác định';
+        if (typeof error === 'string') {
+            errorMessage = error;
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+            errorMessage = error.message || error.error_description || JSON.stringify(error);
+        }
         alert('Lỗi khi lưu sản phẩm: ' + errorMessage);
     }
   };

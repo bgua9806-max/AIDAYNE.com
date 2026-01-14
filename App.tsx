@@ -24,6 +24,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminBlog } from './pages/admin/AdminBlog';
+import { AdminBlogEditor } from './pages/admin/AdminBlogEditor'; // New Import
 import { AdminPromotions } from './pages/admin/AdminPromotions';
 import { AdminFlashSale } from './pages/admin/AdminFlashSale';
 import { AdminCustomers } from './pages/admin/AdminCustomers';
@@ -137,6 +138,8 @@ function AppContent() {
              <Route path="flash-sale" element={<AdminFlashSale />} />
              <Route path="promotions" element={<AdminPromotions />} />
              <Route path="blog" element={<AdminBlog />} />
+             <Route path="blog/new" element={<AdminBlogEditor />} /> {/* Create New */}
+             <Route path="blog/edit/:id" element={<AdminBlogEditor />} /> {/* Edit Existing */}
              <Route path="customers" element={<AdminCustomers />} />
              <Route path="hero" element={<AdminHero />} />
           </Route>

@@ -9,13 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "lucide-react": "^0.562.0",
-    "react-router-dom": "^7.11.0",
-    "@supabase/supabase-js": "^2.89.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.4.0"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lucide-react": "0.344.0",
+    "react-router-dom": "6.22.3",
+    "@supabase/supabase-js": "2.39.7",
+    "clsx": "2.1.0",
+    "tailwind-merge": "2.2.1",
+    "@tiptap/core": "2.2.4",
+    "@tiptap/react": "2.2.4",
+    "@tiptap/starter-kit": "2.2.4",
+    "@tiptap/extension-image": "2.2.4",
+    "@tiptap/extension-link": "2.2.4",
+    "@tiptap/extension-placeholder": "2.2.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

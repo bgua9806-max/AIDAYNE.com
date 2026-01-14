@@ -79,7 +79,7 @@ export const AdminHero: React.FC = () => {
       if (!error) {
         setSlides(slides.filter(s => s.id !== id));
       } else {
-        alert("Lỗi khi xóa: " + error.message);
+        alert("Lỗi khi xóa: " + (error?.message || 'Không rõ lỗi'));
       }
     }
   };
@@ -100,7 +100,8 @@ export const AdminHero: React.FC = () => {
       setIsModalOpen(false);
       fetchData(); // Refresh data
     } catch (error: any) {
-      alert("Lỗi lưu trữ: " + (error.message || JSON.stringify(error)));
+      const msg = error?.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+      alert("Lỗi lưu trữ: " + msg);
     }
   };
 

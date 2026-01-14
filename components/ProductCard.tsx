@@ -54,10 +54,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
     if (product.platforms && product.platforms.length > 0) {
        return product.platforms.map((p, i) => {
            const lowP = p.toLowerCase();
-           if (lowP.includes('win')) return <Monitor key={i} size={12} className="text-gray-400" />;
-           if (lowP.includes('mac') || lowP.includes('ios')) return <Command key={i} size={12} className="text-gray-400" />;
-           if (lowP.includes('android')) return <Smartphone key={i} size={12} className="text-gray-400" />;
-           return null;
+           if (lowP.includes('win')) return <span key={i} title="Windows"><Monitor size={12} className="text-gray-400" /></span>;
+           if (lowP.includes('mac') || lowP.includes('ios')) return <span key={i} title="Apple"><Command size={12} className="text-gray-400" /></span>;
+           if (lowP.includes('android')) return <span key={i} title="Android"><Smartphone size={12} className="text-gray-400" /></span>;
+           return <span key={i} title="Khác"><Globe size={12} className="text-gray-400" /></span>;
        });
     }
 
@@ -67,29 +67,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         case 'music':
             return (
                 <>
-                    <Monitor size={12} className="text-gray-400" title="TV/PC" />
-                    <Smartphone size={12} className="text-gray-400" title="Mobile" />
-                    <Tablet size={12} className="text-gray-400" title="Tablet" />
+                    <span title="TV/PC"><Monitor size={12} className="text-gray-400" /></span>
+                    <span title="Mobile"><Smartphone size={12} className="text-gray-400" /></span>
+                    <span title="Tablet"><Tablet size={12} className="text-gray-400" /></span>
                 </>
             );
         case 'work': // Office, Windows
         case 'design': // Adobe
             return (
                 <>
-                    <Monitor size={12} className="text-gray-400" title="Windows" />
-                    <Command size={12} className="text-gray-400" title="MacOS" />
+                    <span title="Windows"><Monitor size={12} className="text-gray-400" /></span>
+                    <span title="MacOS"><Command size={12} className="text-gray-400" /></span>
                 </>
             );
         case 'ai': // ChatGPT
         case 'security': // VPN
             return (
                 <>
-                    <Globe size={12} className="text-gray-400" title="Web" />
-                    <Smartphone size={12} className="text-gray-400" title="App" />
+                    <span title="Web"><Globe size={12} className="text-gray-400" /></span>
+                    <span title="App"><Smartphone size={12} className="text-gray-400" /></span>
                 </>
             );
         default:
-            return <Monitor size={12} className="text-gray-400" />;
+            return <span title="Desktop"><Monitor size={12} className="text-gray-400" /></span>;
     }
   };
 

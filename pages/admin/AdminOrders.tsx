@@ -87,10 +87,16 @@ export const AdminOrders: React.FC = () => {
       const printWindow = window.open('', '', 'width=800,height=600');
       if (!printWindow) return;
 
+      // Safe access for object properties to avoid [object Object]
+      const customerName = typeof order.customer_name === 'string' ? order.customer_name : 'Khách lẻ';
+      const orderId = typeof order.id === 'string' ? order.id.slice(0, 8).toUpperCase() : 'UNKNOWN';
+      const email = typeof order.email === 'string' ? order.email : '';
+      const phone = typeof order.phone === 'string' ? order.phone : '';
+
       const itemsHtml = Array.isArray(order.items) 
         ? order.items.map((item: any) => `
             <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px 0;">${item.name || 'Sản phẩm'}</td>
+                <td style="padding: 10px 0;">${typeof item.name === 'string' ? item.name : 'Sản phẩm'}</td>
                 <td style="text-align: center;">${item.quantity || 1}</td>
                 <td style="text-align: right;">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price || 0)}</td>
                 <td style="text-align: right; font-weight: bold;">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((item.price || 0) * (item.quantity || 1))}</td>
@@ -101,7 +107,7 @@ export const AdminOrders: React.FC = () => {
       const htmlContent = `
         <html>
           <head>
-            <title>Hóa đơn #${order.id}</title>
+            <title>Hóa đơn #${orderId}</title>
             <style>
               body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #333; }
               .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px; }
@@ -127,13 +133,13 @@ export const AdminOrders: React.FC = () => {
             <div class="info-grid">
                <div>
                   <div class="label">Khách hàng</div>
-                  <div class="value">${order.customer_name || 'Khách lẻ'}</div>
-                  <div class="value" style="font-size: 14px; color: #666; margin-top: 4px;">${order.email || ''}</div>
-                  <div class="value" style="font-size: 14px; color: #666;">${order.phone || ''}</div>
+                  <div class="value">${customerName}</div>
+                  <div class="value" style="font-size: 14px; color: #666; margin-top: 4px;">${email}</div>
+                  <div class="value" style="font-size: 14px; color: #666;">${phone}</div>
                </div>
                <div style="text-align: right;">
                   <div class="label">Mã đơn hàng</div>
-                  <div class="value">#${order.id.slice(0, 8).toUpperCase()}</div>
+                  <div class="value">#${orderId}</div>
                   <div class="label" style="margin-top: 15px;">Ngày đặt</div>
                   <div class="value">${new Date(order.created_at).toLocaleDateString('vi-VN')}</div>
                </div>
@@ -330,7 +336,7 @@ export const AdminOrders: React.FC = () => {
                                             </div>
                                             
                                             <h4 className="font-bold text-gray-900 text-sm mb-1">{order.customer_name || 'Khách lẻ'}</h4>
-                                            <div className="text-xs text-gray-500 mb-3">{order.payment_method}</div>
+                                            <div className="text-xs text-gray-500 mb-3">{typeof order.payment_method === 'string' ? order.payment_method : 'Thanh toán'}</div>
                                             
                                             <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                                 <span className="font-extrabold text-primary text-sm">
@@ -409,7 +415,7 @@ export const AdminOrders: React.FC = () => {
                                         <br/>
                                         <span className="text-[10px] opacity-70">{new Date(order.created_at).toLocaleTimeString('vi-VN')}</span>
                                     </td>
-                                    <td className="p-4 text-sm text-gray-600">{order.payment_method}</td>
+                                    <td className="p-4 text-sm text-gray-600">{typeof order.payment_method === 'string' ? order.payment_method : 'Thanh toán'}</td>
                                     <td className="p-4 font-extrabold text-primary text-sm">
                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.total)}
                                     </td>
@@ -489,7 +495,7 @@ export const AdminOrders: React.FC = () => {
                           </div>
                           <div className="text-right">
                               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Thanh toán</h4>
-                              <div className="font-bold text-gray-900 text-lg mb-1">{selectedOrder.payment_method}</div>
+                              <div className="font-bold text-gray-900 text-lg mb-1">{typeof selectedOrder.payment_method === 'string' ? selectedOrder.payment_method : 'Thanh toán'}</div>
                               <div className="text-sm text-gray-500">Trạng thái: Đã thanh toán</div>
                           </div>
                       </div>
@@ -506,7 +512,7 @@ export const AdminOrders: React.FC = () => {
                                           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-xs border border-gray-200 shadow-sm">
                                               {item.quantity}x
                                           </div>
-                                          <span className="font-bold text-gray-900 text-sm">{item.name}</span>
+                                          <span className="font-bold text-gray-900 text-sm">{typeof item.name === 'string' ? item.name : 'Sản phẩm'}</span>
                                       </div>
                                       <span className="font-bold text-gray-900">
                                           {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price * item.quantity)}
