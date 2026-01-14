@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight, Bell } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -116,8 +116,6 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   };
 
   const saveRecentSearch = (term: string) => {
-      // Don't save if it's a product name click, usually user wants to save typed queries. 
-      // But here let's save the query if manually typed.
       if (!term.trim()) return;
       const newRecent = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
       setRecentSearches(newRecent);
@@ -164,22 +162,23 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   return (
     <>
       {/* Floating Navbar Container */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${scrolled ? 'pt-2 px-3 lg:px-4' : 'pt-0'}`}>
-        <div className={`max-w-7xl mx-auto transition-all duration-500 ${scrolled ? 'glass rounded-2xl shadow-soft py-3 px-4 lg:px-6' : 'bg-transparent py-4 lg:py-6 px-4 sm:px-8'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${scrolled ? 'pt-0 lg:pt-2 px-0 lg:px-4' : 'pt-0'}`}>
+        <div className={`max-w-7xl mx-auto transition-all duration-500 ${scrolled ? 'glass-dark lg:glass border-b border-white/10 lg:border-white/50 lg:rounded-2xl lg:shadow-soft py-3 px-4 lg:px-6' : 'bg-white/80 backdrop-blur-md lg:bg-transparent py-3 lg:py-6 px-4 sm:px-8 border-b border-gray-100 lg:border-none'}`}>
           <div className="flex items-center justify-between gap-4">
             
             {/* Logo Area */}
             <div className="flex-shrink-0 flex items-center gap-6">
               <div className="flex items-center gap-3">
+                {/* Mobile Menu Trigger (Legacy) - Hidden on Mobile New Design */}
                 <button 
-                  className="lg:hidden p-2 -ml-2 text-gray-800 hover:text-primary transition-colors"
+                  className="hidden p-2 -ml-2 text-gray-800 hover:text-primary transition-colors"
                   onClick={() => setIsMobileMenuOpen(true)}
                 >
                   <Menu size={24} />
                 </button>
                 
                 <Link to="/" className="flex items-center gap-1 group">
-                  <span className="font-extrabold text-xl tracking-tight text-gray-900">
+                  <span className="font-extrabold text-xl lg:text-xl tracking-tight text-gray-900">
                     AIDAYNE<span className="text-primary">.com</span>
                   </span>
                 </Link>
@@ -234,35 +233,32 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <button 
-                onClick={() => setIsCommandOpen(true)} 
-                className="lg:hidden p-2 text-gray-800 hover:text-primary transition-colors"
-              >
-                <Search size={20} strokeWidth={2} />
-              </button>
-
-              <Link to="/admin" className="hidden sm:flex items-center p-2 text-gray-500 hover:text-black transition-all" title="Admin">
+              
+              {/* Desktop Actions */}
+              <Link to="/admin" className="hidden lg:flex items-center p-2 text-gray-500 hover:text-black transition-all" title="Admin">
                   <LayoutDashboard size={20} strokeWidth={1.5} />
               </Link>
               
-              <div className="h-4 w-px bg-gray-300 hidden sm:block mx-1"></div>
+              <div className="h-4 w-px bg-gray-300 hidden lg:block mx-1"></div>
 
+              {/* User / Login (Desktop) */}
               {user ? (
                  <button 
                     onClick={handleLogout}
-                    className="hidden sm:block p-2 text-gray-500 hover:text-black transition-all"
+                    className="hidden lg:block p-2 text-gray-500 hover:text-black transition-all"
                  >
                     <LogOut size={20} strokeWidth={1.5} />
                  </button>
               ) : (
-                <Link to="/login" className="hidden sm:block p-2 text-gray-500 hover:text-black transition-all">
+                <Link to="/login" className="hidden lg:block p-2 text-gray-500 hover:text-black transition-all">
                   <User size={20} strokeWidth={1.5} />
                 </Link>
               )}
               
+              {/* Cart (Desktop) - Mobile cart is in BottomNav */}
               <button 
                 onClick={onOpenCart}
-                className="relative p-2 text-gray-800 hover:text-primary transition-all group"
+                className="hidden lg:block relative p-2 text-gray-800 hover:text-primary transition-all group"
               >
                 <ShoppingBag size={20} strokeWidth={1.5} />
                 {cartCount > 0 && (
@@ -270,6 +266,11 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                     {cartCount}
                   </span>
                 )}
+              </button>
+
+              {/* MOBILE ONLY ACTIONS */}
+              <button className="lg:hidden p-2 text-gray-600 active:scale-90 transition-transform">
+                 <Bell size={22} />
               </button>
             </div>
           </div>
@@ -420,67 +421,6 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                  <span>AIDAYNE Search</span>
               </div>
            </div>
-        </div>
-      )}
-
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden animate-fade-in">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="absolute inset-y-0 left-0 w-[85%] max-w-xs bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto border-r border-white/20">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-8">
-                 <span className="font-extrabold text-xl tracking-tight text-gray-900">
-                    AIDAYNE<span className="text-primary">.com</span>
-                 </span>
-                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-600">
-                   <X size={20} />
-                 </button>
-              </div>
-
-              {/* Mobile Search Button triggers Command Palette logic */}
-              <button 
-                 onClick={() => { setIsMobileMenuOpen(false); setIsCommandOpen(true); }}
-                 className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-500 mb-8"
-              >
-                 <Search size={18} />
-                 Tìm kiếm sản phẩm...
-              </button>
-
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Danh mục</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {CATEGORIES.map((cat) => (
-                      <Link 
-                        key={cat.id} 
-                        to={`/products?category=${cat.id}`} 
-                        className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 text-gray-700 transition-colors border border-transparent hover:border-blue-100"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <cat.icon size={20} className="text-primary" strokeWidth={1.5} />
-                        <span className="text-xs font-medium text-center">{cat.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-gray-100 space-y-1">
-                  <Link to="/order-lookup" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tra cứu đơn hàng</Link>
-                  <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Tin tức & Mẹo vặt</Link>
-                  <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-medium text-gray-900 hover:text-primary">Liên hệ hỗ trợ</Link>
-                  <a href="https://zalo.me/0374770023" target="_blank" rel="noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 py-3 text-sm font-bold text-blue-600 bg-blue-50 px-3 rounded-lg mt-2"><MessageCircle size={16}/> Chat Zalo hỗ trợ</a>
-                  <a href="https://www.facebook.com/profile.php?id=61552104173388&locale=vi_VN" target="_blank" rel="noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 py-3 text-sm font-bold text-[#1877F2] bg-blue-50/50 px-3 rounded-lg mt-1"><Facebook size={16}/> Chat Facebook</a>
-                  
-                  {!user ? (
-                      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block py-3 text-sm font-bold text-primary mt-2">Đăng nhập / Đăng ký</Link>
-                  ) : (
-                      <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="w-full text-left py-3 text-sm font-bold text-red-500 mt-2">Đăng xuất</button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </>
