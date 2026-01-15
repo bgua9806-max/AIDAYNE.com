@@ -92,4 +92,6 @@ export interface Customer {
   avatar_url?: string;
   phone?: string;
   created_at: string;
+  is_vip?: boolean;      // New: Trạng thái VIP
+  total_spend?: number;  // New: Tổng chi tiêu
 }

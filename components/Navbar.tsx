@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight, Bell, Home, LayoutGrid, BookOpen, Phone, PackageCheck } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight, Bell, Home, LayoutGrid, BookOpen, Phone, PackageCheck, Crown } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -32,7 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart, isSearchO
   const searchInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth(); // Use profile from context
 
   // Load Data & Events
   useEffect(() => {
@@ -281,13 +281,25 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart, isSearchO
 
               {/* User / Login (Desktop) */}
               {user ? (
-                 <button 
-                    onClick={handleLogout}
-                    className="hidden lg:block p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                    title="Đăng xuất"
-                 >
-                    <LogOut size={20} strokeWidth={1.5} />
-                 </button>
+                 <div className="hidden lg:flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded-full border border-gray-100">
+                        {profile?.avatar_url || user.user_metadata.avatar_url ? (
+                            <img src={profile?.avatar_url || user.user_metadata.avatar_url} className="w-6 h-6 rounded-full" alt="Avatar" />
+                        ) : (
+                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                                {user.email?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        {profile?.is_vip && <Crown size={14} className="text-yellow-500 fill-yellow-500" />}
+                    </div>
+                    <button 
+                        onClick={handleLogout}
+                        className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                        title="Đăng xuất"
+                    >
+                        <LogOut size={20} strokeWidth={1.5} />
+                    </button>
+                 </div>
               ) : (
                 <Link to="/login" className="hidden lg:block p-2.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-full transition-all" title="Đăng nhập">
                   <User size={20} strokeWidth={1.5} />
@@ -399,11 +411,18 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart, isSearchO
             <div className="p-6 bg-gray-50 border-t border-gray-100">
                {user ? (
                   <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
-                        {user.email?.charAt(0).toUpperCase()}
+                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-bold overflow-hidden shadow-sm border border-gray-200">
+                        {profile?.avatar_url || user.user_metadata?.avatar_url ? (
+                            <img src={profile?.avatar_url || user.user_metadata.avatar_url} className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-gray-500">{user.email?.charAt(0).toUpperCase()}</span>
+                        )}
                      </div>
                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm truncate">{user.email}</div>
+                        <div className="font-bold text-sm truncate flex items-center gap-1">
+                            {user.email} 
+                            {profile?.is_vip && <Crown size={12} className="text-yellow-500 fill-yellow-500" />}
+                        </div>
                         <button onClick={handleLogout} className="text-xs text-red-500 font-bold hover:underline">Đăng xuất</button>
                      </div>
                   </div>
