@@ -7,7 +7,7 @@ import * as ReactRouterDOM from 'react-router-dom';
 import { slugify } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
-const { Link } = ReactRouterDOM;
+const { Link, useLocation } = ReactRouterDOM;
 
 interface Message {
   id: string;
@@ -40,6 +40,20 @@ export const ChatBot: React.FC = () => {
   ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  // Determine bottom position based on route (Mobile only)
+  // Product Detail has Buy Bar (~80px) -> Needs bottom-24
+  // Main Pages have Bottom Nav (~90px) -> Needs bottom-28
+  // Login/Admin -> bottom-6
+  const getMobilePositionClass = () => {
+      const path = location.pathname;
+      if (path.startsWith('/admin') || path === '/login') return 'bottom-6';
+      if (path.startsWith('/product/')) return 'bottom-24'; // Above Buy Bar
+      return 'bottom-28'; // Above Bottom Nav
+  };
+
+  const mobileBottomClass = getMobilePositionClass();
 
   // 1. Fetch Real Data on Mount
   useEffect(() => {
@@ -180,7 +194,7 @@ export const ChatBot: React.FC = () => {
       {/* Floating Button */}
       <button
         onClick={toggleChat}
-        className={`fixed bottom-6 right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary animate-bounce-slow'}`}
+        className={`fixed ${mobileBottomClass} lg:bottom-6 right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary animate-bounce-slow'}`}
       >
         {isOpen ? (
             <X size={28} className="text-white" />
@@ -197,7 +211,7 @@ export const ChatBot: React.FC = () => {
 
       {/* Chat Window */}
       <div 
-        className={`fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[600px] max-h-[75vh] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 z-[60] flex flex-col overflow-hidden transition-all duration-500 origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-20 pointer-events-none'}`}
+        className={`fixed ${mobileBottomClass} lg:bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[600px] max-h-[70vh] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 z-[60] flex flex-col overflow-hidden transition-all duration-500 origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-20 pointer-events-none'}`}
       >
         {/* Header */}
         <div className="bg-white/50 backdrop-blur-md p-5 flex items-center justify-between shrink-0 border-b border-gray-100">

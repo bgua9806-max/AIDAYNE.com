@@ -14,6 +14,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ cartCount, onOpenCart }) =
   const location = useLocation();
   const path = location.pathname;
 
+  // Ẩn BottomNav khi đang ở trang chi tiết sản phẩm để nhường chỗ cho Sticky Action Bar
+  if (path.startsWith('/product/')) {
+    return null;
+  }
+
   const NavItem = ({ to, icon: Icon, label, isActive, onClick }: any) => (
     <Link 
       to={to || '#'} 

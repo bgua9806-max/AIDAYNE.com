@@ -35,7 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
   // Load Data & Events
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     
     // Keyboard Shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -95,6 +95,9 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   }, [isCommandOpen]);
 
   const isActive = (path: string) => location.pathname === path;
+  
+  // Check if current page is Product Detail to hide Navbar on Mobile
+  const isProductPage = location.pathname.startsWith('/product/');
 
   // Search Logic
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,22 +164,32 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
   return (
     <>
-      {/* Floating Navbar Container */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${scrolled ? 'pt-0 lg:pt-2 px-0 lg:px-4' : 'pt-0'}`}>
-        <div className={`max-w-7xl mx-auto transition-all duration-500 ${scrolled ? 'glass-dark lg:glass border-b border-white/10 lg:border-white/50 lg:rounded-2xl lg:shadow-soft py-3 px-4 lg:px-6' : 'bg-white/80 backdrop-blur-md lg:bg-transparent py-3 lg:py-6 px-4 sm:px-8 border-b border-gray-100 lg:border-none'}`}>
-          <div className="flex items-center justify-between gap-4">
+      {/* 
+        FLOATING NAVBAR DESIGN (ISLAND STYLE)
+        - Always uses light/glass theme for best contrast with dark text.
+        - Floats from top with padding.
+        - Hidden on Mobile for Product Detail pages.
+      */}
+      <nav 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] 
+        ${scrolled ? 'pt-2' : 'pt-4 lg:pt-6'}
+        ${isProductPage ? 'hidden lg:block' : ''}
+        `}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div 
+            className={`
+              flex items-center justify-between gap-4 rounded-2xl transition-all duration-500 border
+              ${scrolled 
+                ? 'bg-white/85 backdrop-blur-xl border-gray-200/60 shadow-lg shadow-gray-200/20 py-2.5 px-4 lg:px-6' 
+                : 'bg-white/60 backdrop-blur-md border-white/40 shadow-sm py-3 px-5 lg:py-4 lg:px-8'
+              }
+            `}
+          >
             
             {/* Logo Area */}
             <div className="flex-shrink-0 flex items-center gap-6">
               <div className="flex items-center gap-3">
-                {/* Mobile Menu Trigger (Legacy) - Hidden on Mobile New Design */}
-                <button 
-                  className="hidden p-2 -ml-2 text-gray-800 hover:text-primary transition-colors"
-                  onClick={() => setIsMobileMenuOpen(true)}
-                >
-                  <Menu size={24} />
-                </button>
-                
                 <Link to="/" className="flex items-center gap-1 group">
                   <span className="font-extrabold text-xl lg:text-xl tracking-tight text-gray-900">
                     AIDAYNE<span className="text-primary">.com</span>
@@ -185,47 +198,49 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
               </div>
 
               {/* Desktop Nav Links */}
-              <div className="hidden lg:flex items-center gap-1">
+              <div className="hidden lg:flex items-center gap-1 ml-4">
                  <button 
-                  className="flex items-center gap-1.5 text-[13px] font-medium text-gray-600 hover:text-black px-3 py-2 rounded-lg transition-all"
+                  className={`flex items-center gap-1.5 text-[13px] font-bold px-4 py-2 rounded-full transition-all ${isCategoryOpen ? 'bg-gray-100 text-black' : 'text-gray-600 hover:text-black hover:bg-gray-50'}`}
                   onMouseEnter={() => setIsCategoryOpen(true)}
                   onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                  >
-                   Store
+                   Cửa hàng
                    <ChevronDown size={14} className={`opacity-50 transition-transform duration-300 ${isCategoryOpen ? 'rotate-180' : ''}`} />
                  </button>
                  <Link 
                   to="/blog" 
-                  className={`text-[13px] font-medium px-3 py-2 rounded-lg transition-all ${isActive('/blog') ? 'text-black' : 'text-gray-600 hover:text-black'}`}
+                  className={`text-[13px] font-bold px-4 py-2 rounded-full transition-all ${isActive('/blog') ? 'bg-black text-white shadow-md' : 'text-gray-600 hover:text-black hover:bg-gray-50'}`}
                  >
-                   News
+                   Tin tức
                  </Link>
                  <Link 
                    to="/contact" 
-                   className={`text-[13px] font-medium px-3 py-2 rounded-lg transition-all ${isActive('/contact') ? 'text-black' : 'text-gray-600 hover:text-black'}`}
+                   className={`text-[13px] font-bold px-4 py-2 rounded-full transition-all ${isActive('/contact') ? 'bg-black text-white shadow-md' : 'text-gray-600 hover:text-black hover:bg-gray-50'}`}
                  >
-                   Contact
+                   Liên hệ
                  </Link>
                  <Link 
                    to="/order-lookup" 
-                   className={`text-[13px] font-medium px-3 py-2 rounded-lg transition-all ${isActive('/order-lookup') ? 'text-black' : 'text-gray-600 hover:text-black'}`}
+                   className={`text-[13px] font-bold px-4 py-2 rounded-full transition-all ${isActive('/order-lookup') ? 'bg-black text-white shadow-md' : 'text-gray-600 hover:text-black hover:bg-gray-50'}`}
                  >
-                   Check Order
+                   Tra cứu đơn
                  </Link>
               </div>
             </div>
 
             {/* Smart Command Trigger (Desktop) */}
-            <div className="flex-1 max-w-md mx-auto hidden lg:block">
+            <div className="flex-1 max-w-sm mx-auto hidden lg:block">
               <button 
                 onClick={() => setIsCommandOpen(true)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-100/80 hover:bg-white border border-transparent hover:border-gray-200 rounded-xl text-sm text-gray-500 transition-all duration-300 group shadow-inner hover:shadow-sm"
+                className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-xl text-sm transition-all duration-300 group
+                  ${scrolled ? 'bg-gray-100/50 border-transparent hover:bg-white hover:border-gray-200' : 'bg-white border-gray-200 hover:border-primary/30 shadow-sm'}
+                `}
               >
                 <div className="flex items-center gap-3">
                    <Search size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
-                   <span className="font-medium group-hover:text-gray-900">Tìm kiếm sản phẩm...</span>
+                   <span className="font-medium text-gray-500 group-hover:text-gray-900">Tìm kiếm...</span>
                 </div>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[10px] font-bold text-gray-400 font-mono">
+                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-400 font-mono group-hover:bg-white group-hover:text-primary transition-colors">
                    <Command size={10} /> K
                 </div>
               </button>
@@ -235,66 +250,73 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
             <div className="flex items-center gap-1 sm:gap-2">
               
               {/* Desktop Actions */}
-              <Link to="/admin" className="hidden lg:flex items-center p-2 text-gray-500 hover:text-black transition-all" title="Admin">
+              <Link to="/admin" className="hidden lg:flex items-center p-2.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-full transition-all" title="Admin">
                   <LayoutDashboard size={20} strokeWidth={1.5} />
               </Link>
               
-              <div className="h-4 w-px bg-gray-300 hidden lg:block mx-1"></div>
+              <div className="h-5 w-px bg-gray-200 hidden lg:block mx-1"></div>
 
               {/* User / Login (Desktop) */}
               {user ? (
                  <button 
                     onClick={handleLogout}
-                    className="hidden lg:block p-2 text-gray-500 hover:text-black transition-all"
+                    className="hidden lg:block p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                    title="Đăng xuất"
                  >
                     <LogOut size={20} strokeWidth={1.5} />
                  </button>
               ) : (
-                <Link to="/login" className="hidden lg:block p-2 text-gray-500 hover:text-black transition-all">
+                <Link to="/login" className="hidden lg:block p-2.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-full transition-all" title="Đăng nhập">
                   <User size={20} strokeWidth={1.5} />
                 </Link>
               )}
               
-              {/* Cart (Desktop) - Mobile cart is in BottomNav */}
+              {/* Cart (Desktop) */}
               <button 
                 onClick={onOpenCart}
-                className="hidden lg:block relative p-2 text-gray-800 hover:text-primary transition-all group"
+                className="hidden lg:block relative p-2.5 text-gray-800 hover:text-primary hover:bg-primary/5 rounded-full transition-all group"
               >
                 <ShoppingBag size={20} strokeWidth={1.5} />
                 {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-primary rounded-full shadow-sm">
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-red-500 rounded-full shadow-sm ring-2 ring-white">
                     {cartCount}
                   </span>
                 )}
               </button>
 
               {/* MOBILE ONLY ACTIONS */}
-              <button className="lg:hidden p-2 text-gray-600 active:scale-90 transition-transform">
+              <button 
+                onClick={() => setIsCommandOpen(true)}
+                className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all"
+              >
+                 <Search size={22} />
+              </button>
+              <button className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all">
                  <Bell size={22} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Desktop Mega Menu */}
+        {/* Desktop Mega Menu Dropdown */}
         <div 
-          className={`hidden lg:block absolute top-full left-0 right-0 pt-2 transition-all duration-300 origin-top ${isCategoryOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible'}`}
+          className={`hidden lg:block absolute top-full left-0 right-0 pt-4 transition-all duration-300 origin-top ${isCategoryOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible'}`}
           onMouseLeave={() => setIsCategoryOpen(false)}
         >
            <div className="max-w-7xl mx-auto px-4">
-             <div className="glass rounded-2xl shadow-2xl p-8 border border-white/50">
+             <div className="bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.1)] p-8 border border-white/50 ring-1 ring-gray-900/5">
                <div className="grid grid-cols-5 gap-6">
                   {CATEGORIES.slice(0, 5).map((cat) => (
                     <Link 
                       key={cat.id} 
                       to={`/products?category=${cat.id}`}
-                      className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-white/60 transition-all group text-center"
+                      className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-white/80 transition-all group text-center border border-transparent hover:border-gray-100 hover:shadow-sm"
                       onClick={() => setIsCategoryOpen(false)}
                     >
-                      <div className="w-12 h-12 rounded-full bg-gray-100/50 text-gray-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm">
-                        <cat.icon size={22} strokeWidth={1.5} />
+                      <div className="w-14 h-14 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:shadow-primary/30">
+                        <cat.icon size={26} strokeWidth={1.5} />
                       </div>
-                      <span className="text-sm font-semibold text-gray-900">{cat.name}</span>
+                      <span className="text-sm font-bold text-gray-700 group-hover:text-black">{cat.name}</span>
                     </Link>
                   ))}
                </div>
@@ -310,7 +332,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCommandOpen(false)}></div>
            
            {/* Modal Panel */}
-           <div className="relative w-full max-w-2xl bg-white/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col animate-fade-in-up">
+           <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col animate-fade-in-up ring-1 ring-black/5">
               
               {/* Search Header */}
               <div className="flex items-center gap-4 p-5 border-b border-gray-200/50 bg-white/50">
