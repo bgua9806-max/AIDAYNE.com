@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 -- SAFETY MIGRATION: Ensure columns exist if table was created previously without them
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone text; -- Added missing phone column migration
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS items jsonb;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS note text;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method text;

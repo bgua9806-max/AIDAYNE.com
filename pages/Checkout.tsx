@@ -31,6 +31,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
   const [paymentMethod, setPaymentMethod] = useState('qr');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isPaidConfirmed, setIsPaidConfirmed] = useState(false); // Trạng thái xác nhận đã thanh toán
   const [orderId, setOrderId] = useState('');
   const [finalTotal, setFinalTotal] = useState(0); // Lưu tổng tiền để tạo QR
 
@@ -101,12 +102,28 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
       let errorMessage = error.message || 'Lỗi kết nối';
       
       if (errorMessage.includes("Could not find the 'email' column")) {
-          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'email'.\n\nVui lòng vào Supabase SQL Editor và chạy lệnh sau:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;`);
+          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'email'.\n\nVui lòng chạy lệnh SQL:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;`);
+      } else if (errorMessage.includes("Could not find the 'phone' column")) {
+          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'phone'.\n\nVui lòng chạy lệnh SQL:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS phone text;`);
       } else {
           alert('Có lỗi xảy ra khi tạo đơn hàng: ' + errorMessage);
       }
       setIsProcessing(false);
     }
+  };
+
+  const handleConfirmPaid = async () => {
+      setIsPaidConfirmed(true);
+      window.scrollTo(0, 0);
+      
+      // Cập nhật trạng thái đơn hàng thành 'processing' (Đang xử lý)
+      if (orderId) {
+          try {
+              await supabase.from('orders').update({ status: 'processing' }).eq('id', orderId);
+          } catch (error) {
+              console.error("Lỗi cập nhật trạng thái:", error);
+          }
+      }
   };
 
   const copyToClipboard = (text: string) => {
@@ -120,18 +137,21 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
     // Link tạo QR động từ VietQR
     const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.BANK_ID}-${BANK_INFO.ACCOUNT_NO}-${BANK_INFO.TEMPLATE}.png?amount=${finalTotal}&addInfo=${transferContent}&accountName=${encodeURIComponent(BANK_INFO.ACCOUNT_NAME)}`;
 
+    // Hiển thị QR nếu chọn QR và chưa bấm xác nhận thanh toán
+    const showQrView = paymentMethod === 'qr' && !isPaidConfirmed;
+
     return (
       <main className="min-h-screen bg-white flex items-center justify-center p-4 py-12">
         <div className="max-w-xl w-full text-center space-y-8 animate-fade-in-up">
            
-           {paymentMethod === 'qr' ? (
+           {showQrView ? (
              <div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden">
                 <div className="bg-primary p-6 text-white">
                     <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle size={32} strokeWidth={3} />
+                        <CreditCard size={32} strokeWidth={3} />
                     </div>
-                    <h1 className="text-2xl font-extrabold">Đặt hàng thành công!</h1>
-                    <p className="text-white/80 text-sm mt-2">Vui lòng quét mã bên dưới để hoàn tất thanh toán.</p>
+                    <h1 className="text-2xl font-extrabold">Thanh toán đơn hàng</h1>
+                    <p className="text-white/80 text-sm mt-2">Vui lòng quét mã bên dưới để hoàn tất.</p>
                 </div>
                 
                 <div className="p-8">
@@ -187,26 +207,34 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                         </div>
                     </div>
 
-                    <p className="text-xs text-gray-400 mt-6 italic">
-                        * Hệ thống sẽ tự động xác nhận đơn hàng sau 1-3 phút khi nhận được tiền.
-                    </p>
+                    <div className="mt-8 space-y-3">
+                        <button 
+                            onClick={handleConfirmPaid}
+                            className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 animate-pulse-slow"
+                        >
+                            <CheckCircle size={20} /> Tôi đã thanh toán
+                        </button>
+                        <p className="text-xs text-gray-400 italic">
+                            * Lưu ý: Chỉ bấm nút trên sau khi bạn đã chuyển khoản thành công.
+                        </p>
+                    </div>
                 </div>
              </div>
            ) : (
-             // Standard Success View for other methods
+             // Standard Success View (Used for MoMo, Card, or QR after clicking "Paid")
              <>
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 animate-bounce-slow">
                     <CheckCircle size={48} strokeWidth={3} />
                 </div>
                 <h1 className="text-3xl font-extrabold text-gray-900">Đặt hàng thành công!</h1>
-                <p className="text-gray-500 text-lg">
-                    Cảm ơn bạn đã mua hàng. Mã đơn hàng của bạn là:
+                <p className="text-gray-500 text-lg max-w-md mx-auto">
+                    Cảm ơn bạn đã mua hàng. Hệ thống đang kiểm tra thanh toán và sẽ gửi đơn hàng cho bạn trong giây lát.
                 </p>
                 <div className="bg-gray-100 py-3 px-6 rounded-xl font-mono text-xl font-bold text-gray-900 inline-block border border-gray-200 border-dashed">
                     #{orderId.slice(0, 8).toUpperCase()}
                 </div>
                 <p className="text-sm text-gray-500">
-                    Thông tin đơn hàng đã được gửi tới email <strong>{formData.email}</strong>.
+                    Thông tin đơn hàng cũng sẽ được gửi tới email <strong>{formData.email}</strong>.
                 </p>
              </>
            )}
