@@ -97,26 +97,17 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
       
     } catch (error: any) {
       console.error("Lỗi thanh toán:", error);
-      
-      // Xử lý thông báo lỗi cụ thể cho người dùng/admin
-      let errorMessage = error.message || 'Lỗi kết nối';
-      
-      if (errorMessage.includes("Could not find the 'email' column")) {
-          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'email'.\n\nVui lòng chạy lệnh SQL:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;`);
-      } else if (errorMessage.includes("Could not find the 'phone' column")) {
-          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'phone'.\n\nVui lòng chạy lệnh SQL:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS phone text;`);
-      } else {
-          alert('Có lỗi xảy ra khi tạo đơn hàng: ' + errorMessage);
-      }
+      alert('Có lỗi xảy ra khi tạo đơn hàng: ' + (error.message || 'Lỗi kết nối'));
       setIsProcessing(false);
     }
   };
 
   const handleConfirmPaid = async () => {
+      // Đánh dấu đã xác nhận trên UI để chuyển màn hình
       setIsPaidConfirmed(true);
       window.scrollTo(0, 0);
       
-      // Cập nhật trạng thái đơn hàng thành 'processing' (Đang xử lý)
+      // Cập nhật trạng thái đơn hàng thành 'processing' (Đang xử lý) trong DB
       if (orderId) {
           try {
               await supabase.from('orders').update({ status: 'processing' }).eq('id', orderId);
@@ -207,6 +198,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                         </div>
                     </div>
 
+                    {/* CONFIRMATION BUTTON */}
                     <div className="mt-8 space-y-3">
                         <button 
                             onClick={handleConfirmPaid}
