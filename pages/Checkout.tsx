@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { CartItem } from '../types';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, ShieldCheck, CreditCard, QrCode, Lock, CheckCircle, Package, Copy, Download } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, CreditCard, Lock, CheckCircle, Package, Copy, Download, Mail, Info } from 'lucide-react';
 
 const { useNavigate, Link } = ReactRouterDOM;
 
@@ -253,16 +253,26 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-700 ml-1">Email nhận key/tài khoản</label>
-                        <input 
-                          type="email" 
-                          name="email" 
-                          required 
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="name@example.com" 
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none" 
-                        />
-                        <p className="text-xs text-orange-500 font-medium ml-1">Vui lòng nhập chính xác email để nhận thông tin đơn hàng.</p>
+                        <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <input 
+                              type="email" 
+                              name="email" 
+                              required 
+                              autoComplete="email"
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              placeholder="name@example.com" 
+                              className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none" 
+                            />
+                        </div>
+                        {/* Changed visual style to Info box to prevent error confusion */}
+                        <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100 mt-1">
+                            <Info size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-blue-700 font-medium leading-relaxed">
+                                Quan trọng: Đơn hàng sẽ được gửi tự động qua email này. Vui lòng nhập chính xác.
+                            </p>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-700 ml-1">Ghi chú (Tùy chọn)</label>
