@@ -157,12 +157,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
             <div className="h-full bg-blue-600 transition-all duration-100 ease-out" style={{ width: `${scrollProgress * 100}%` }}></div>
          </div>
 
-         {/* 2. Floating Header Actions */}
-         <div className="fixed top-4 left-4 z-50">
-            <button onClick={() => navigate('/blog')} className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-white/20 text-gray-800 active:scale-90 transition-transform">
-                <ArrowLeft size={20} />
-            </button>
-         </div>
+         {/* 2. Floating Header Actions - REMOVED AS REQUESTED */}
 
          {/* 3. Immersive Header Image */}
          <div className="relative w-full aspect-[3/4]">

@@ -44,10 +44,11 @@ export const ChatBot: React.FC = () => {
 
   // Determine bottom position based on route (Mobile only)
   // Product Detail has Buy Bar (~80px) -> Needs bottom-24
+  // Blog Detail has Sticky Action Bar -> Needs bottom-24
   // Others -> Standard bottom-6 (since Bottom Nav is removed)
   const getMobilePositionClass = () => {
       const path = location.pathname;
-      if (path.startsWith('/product/')) return 'bottom-24'; // Above Buy Bar
+      if (path.startsWith('/product/') || path.startsWith('/blog/')) return 'bottom-24'; // Above sticky bars
       return 'bottom-6'; // Standard position
   };
 
