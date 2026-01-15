@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { BottomNav } from './components/mobile/BottomNav'; // Import BottomNav
 import { Home } from './pages/Home';
 import { ProductsPage } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
@@ -151,8 +150,8 @@ function AppContent() {
                 isSearchOpen={isSearchOpen}
                 setIsSearchOpen={setIsSearchOpen}
               />
-              {/* Added padding-bottom to prevent content from being hidden behind the dock on mobile */}
-              <div className="pb-24 lg:pb-0">
+              {/* Removed pb-24 since BottomNav is gone */}
+              <div className="">
                 <Routes>
                   <Route path="/" element={<Home addToCart={addToCart} />} />
                   <Route path="/products" element={<ProductsPage addToCart={addToCart} />} />
@@ -165,12 +164,6 @@ function AppContent() {
                 </Routes>
               </div>
               <Footer />
-              {/* Bottom Nav Dock - Mobile Only */}
-              <BottomNav 
-                cartCount={cartCount} 
-                onOpenCart={() => setIsCartOpen(true)} 
-                onOpenSearch={() => setIsSearchOpen(true)}
-              />
             </>
           } />
         </Routes>
