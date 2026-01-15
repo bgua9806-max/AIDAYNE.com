@@ -143,7 +143,14 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
   return (
     <main className="min-h-screen bg-white font-sans selection:bg-primary/20 selection:text-primary">
-      <SEO title={post.title} description={post.excerpt} image={post.image} type="article" schema={articleSchema} />
+      <SEO 
+        title={post.title} 
+        description={post.excerpt} 
+        image={post.image} 
+        url={window.location.href}
+        type="article" 
+        schema={articleSchema} 
+      />
 
       {/* ==============================================================
           MOBILE LAYOUT ( < 1024px )

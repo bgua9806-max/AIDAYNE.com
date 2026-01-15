@@ -140,9 +140,44 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
   const currentOriginalPrice = selectedVariant ? selectedVariant.originalPrice : product.originalPrice;
   const discountPercent = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
 
+  // JSON-LD for Product
+  const productSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image,
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": product.developer || "AIDAYNE"
+    },
+    "sku": product.id,
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "VND",
+      "price": currentPrice,
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating,
+      "reviewCount": product.reviews?.length || 1
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-sans selection:bg-primary selection:text-white">
-      <SEO title={product.name} description={product.description} image={product.image} />
+      <SEO 
+        title={product.name} 
+        description={product.description} 
+        image={product.image}
+        url={window.location.href}
+        type="product"
+        schema={productSchema}
+      />
 
       {/* --- MOBILE LAYOUT --- */}
       <div className="lg:hidden pb-32"> 
