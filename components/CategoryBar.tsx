@@ -31,11 +31,14 @@ export const CategoryBar: React.FC = () => {
   ];
 
   return (
-    <div className="sticky top-[56px] lg:top-[80px] z-40 mb-10 transition-all duration-300">
+    // MOBILE: top-[56px] (Giữ nguyên vị trí cũ)
+    // DESKTOP: lg:top-[100px] (Tăng từ 80px lên 100px để tạo khoảng cách với Menu)
+    <div className="sticky top-[56px] lg:top-[100px] z-40 mb-6 lg:mb-10 transition-all duration-300">
       
       {/* DESKTOP VERSION: PILLS */}
       <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative mx-auto lg:max-w-fit">
+            {/* Background Glass Layer */}
             <div className="absolute inset-0 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] lg:shadow-[0_8px_30px_rgb(0,0,0,0.06)]"></div>
             <div 
                 ref={scrollRef}
@@ -74,7 +77,8 @@ export const CategoryBar: React.FC = () => {
       </div>
 
       {/* MOBILE VERSION: INSTAGRAM STORIES STYLE */}
-      <div className="lg:hidden pl-4 overflow-x-auto no-scrollbar py-2">
+      {/* Thêm background gradient nhẹ để khi scroll nội dung bên dưới không bị lẫn vào text */}
+      <div className="lg:hidden pl-4 overflow-x-auto no-scrollbar py-2 bg-gradient-to-b from-[#F5F5F7]/95 to-[#F5F5F7]/80 backdrop-blur-md">
          <div className="flex gap-4 min-w-full pr-4">
             {allCategories.map((cat) => {
                const isActive = activeCategory === cat.id;
