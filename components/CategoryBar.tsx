@@ -31,9 +31,8 @@ export const CategoryBar: React.FC = () => {
   ];
 
   return (
-    // MOBILE: top-[56px] (Giữ nguyên vị trí cũ)
-    // DESKTOP: lg:top-[100px] (Tăng từ 80px lên 100px để tạo khoảng cách với Menu)
-    <div className="sticky top-[56px] lg:top-[100px] z-40 mb-6 lg:mb-10 transition-all duration-300">
+    // FIX: Tăng top mobile lên 84px để tránh bị dính vào Navbar (Navbar cao khoảng 60-70px)
+    <div className="sticky top-[84px] lg:top-[100px] z-40 mb-6 lg:mb-10 transition-all duration-300">
       
       {/* DESKTOP VERSION: PILLS */}
       <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
