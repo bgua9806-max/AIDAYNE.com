@@ -62,19 +62,34 @@ export const Home: React.FC<HomeProps> = ({ addToCart }) => {
   
   const newProducts = products.filter(p => p.isNew || (typeof p.id === 'string' && parseInt(p.id) > 8));
 
+  // JSON-LD Schema including Organization Logo for Google
   const homeSchema = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "AIDAYNE.com",
-    "url": window.location.origin,
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${window.location.origin}/products?q={search_term_string}`
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "AIDAYNE",
+        "url": window.location.origin,
+        "logo": "https://placehold.co/512x512?text=A", // REPLACE THIS with your actual logo URL
+        "sameAs": [
+          "https://www.facebook.com/profile.php?id=61552104173388&locale=vi_VN",
+          "https://zalo.me/0374770023"
+        ]
       },
-      "query-input": "required name=search_term_string"
-    }
+      {
+        "@type": "WebSite",
+        "name": "AIDAYNE.com",
+        "url": window.location.origin,
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": `${window.location.origin}/products?q={search_term_string}`
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
   };
 
   return (
