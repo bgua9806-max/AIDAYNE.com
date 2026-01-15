@@ -8,9 +8,10 @@ const { Link, useLocation } = ReactRouterDOM;
 interface BottomNavProps {
   cartCount: number;
   onOpenCart: () => void;
+  onOpenSearch: () => void;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ cartCount, onOpenCart }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ cartCount, onOpenCart, onOpenSearch }) => {
   const location = useLocation();
   const path = location.pathname;
 
@@ -53,12 +54,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ cartCount, onOpenCart }) =
         />
         {/* Search Action */}
         <div className="relative -top-6">
-            <Link 
-              to="/products" 
+            <button 
+              onClick={onOpenSearch}
               className="flex items-center justify-center w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg shadow-gray-900/30 active:scale-90 transition-transform border-[4px] border-[#F5F5F7]"
             >
                <Search size={24} />
-            </Link>
+            </button>
         </div>
         
         <NavItem 

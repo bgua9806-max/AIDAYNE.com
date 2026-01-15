@@ -37,6 +37,9 @@ const { HashRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
 function AppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  // Shared Search State
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // --- AUTOMATIC SUPABASE KEEP-ALIVE MECHANISM ---
   useEffect(() => {
@@ -142,7 +145,12 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="*" element={
             <>
-              <Navbar cartCount={cartCount} onOpenCart={() => setIsCartOpen(true)} />
+              <Navbar 
+                cartCount={cartCount} 
+                onOpenCart={() => setIsCartOpen(true)}
+                isSearchOpen={isSearchOpen}
+                setIsSearchOpen={setIsSearchOpen}
+              />
               {/* Added padding-bottom to prevent content from being hidden behind the dock on mobile */}
               <div className="pb-24 lg:pb-0">
                 <Routes>
@@ -158,7 +166,11 @@ function AppContent() {
               </div>
               <Footer />
               {/* Bottom Nav Dock - Mobile Only */}
-              <BottomNav cartCount={cartCount} onOpenCart={() => setIsCartOpen(true)} />
+              <BottomNav 
+                cartCount={cartCount} 
+                onOpenCart={() => setIsCartOpen(true)} 
+                onOpenSearch={() => setIsSearchOpen(true)}
+              />
             </>
           } />
         </Routes>

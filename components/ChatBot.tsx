@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, ChevronRight, Sparkles, RefreshCcw } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, ChevronRight, Sparkles, RefreshCcw, Minus } from 'lucide-react';
 import { PRODUCTS as FALLBACK_PRODUCTS } from '../constants';
 import { Product } from '../types';
 import * as ReactRouterDOM from 'react-router-dom';
@@ -194,7 +194,11 @@ export const ChatBot: React.FC = () => {
       {/* Floating Button */}
       <button
         onClick={toggleChat}
-        className={`fixed ${mobileBottomClass} lg:bottom-6 right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group ${isOpen ? 'bg-gray-900 rotate-90' : 'bg-primary animate-bounce-slow'}`}
+        className={`fixed ${mobileBottomClass} lg:bottom-6 right-6 z-[60] p-4 rounded-full shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95 group 
+        ${isOpen 
+            ? 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto bg-gray-900 rotate-90' 
+            : 'opacity-100 bg-primary animate-bounce-slow'
+        }`}
       >
         {isOpen ? (
             <X size={28} className="text-white" />
@@ -229,9 +233,15 @@ export const ChatBot: React.FC = () => {
                  </p>
               </div>
            </div>
-           <button onClick={() => setMessages([messages[0]])} className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-full transition-colors" title="Làm mới đoạn chat">
-             <RefreshCcw size={18} />
-           </button>
+           <div className="flex items-center gap-2">
+               <button onClick={() => setMessages([messages[0]])} className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-full transition-colors" title="Làm mới đoạn chat">
+                 <RefreshCcw size={18} />
+               </button>
+               {/* Mobile Close Button */}
+               <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Đóng chat">
+                 <Minus size={22} />
+               </button>
+           </div>
         </div>
 
         {/* Messages Area */}

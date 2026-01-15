@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight, Bell } from 'lucide-react';
+import { Search, ShoppingBag, Menu, X, User, ChevronDown, LayoutDashboard, LogOut, ArrowRight, MessageCircle, Facebook, Command, Clock, TrendingUp, CornerDownLeft, ChevronRight, Bell, Home, LayoutGrid, BookOpen, Phone, PackageCheck } from 'lucide-react';
 import { CATEGORIES, PRODUCTS } from '../constants';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Product } from '../types';
@@ -13,15 +13,16 @@ const { Link, useLocation, useNavigate } = ReactRouterDOM;
 interface NavbarProps {
   cartCount: number;
   onOpenCart: () => void;
+  isSearchOpen: boolean;
+  setIsSearchOpen: (isOpen: boolean) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
+export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart, isSearchOpen, setIsSearchOpen }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
   // Command Palette State
-  const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [searchSource, setSearchSource] = useState<Product[]>([]);
@@ -41,10 +42,10 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setIsCommandOpen(prev => !prev);
+        setIsSearchOpen(!isSearchOpen);
       }
       if (e.key === 'Escape') {
-        setIsCommandOpen(false);
+        setIsSearchOpen(false);
       }
     };
 
@@ -82,17 +83,22 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isSearchOpen, setIsSearchOpen]);
 
   // Focus input when modal opens
   useEffect(() => {
-    if (isCommandOpen) {
+    if (isSearchOpen) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
       setSearchQuery('');
       setSuggestions([]);
       setSelectedIndex(0);
     }
-  }, [isCommandOpen]);
+  }, [isSearchOpen]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+      setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
   
@@ -127,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
   const handleProductSelect = (product: Product) => {
     navigate(`/product/${product.slug || slugify(product.name)}`);
-    setIsCommandOpen(false);
+    setIsSearchOpen(false);
     setIsMobileMenuOpen(false);
     saveRecentSearch(product.name);
   };
@@ -138,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
           handleProductSelect(suggestions[selectedIndex]);
       } else if (searchQuery.trim()) {
           navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
-          setIsCommandOpen(false);
+          setIsSearchOpen(false);
           saveRecentSearch(searchQuery);
       }
   };
@@ -161,6 +167,14 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   };
 
   const trendingProducts = searchSource.filter(p => p.isHot).slice(0, 4);
+
+  const MOBILE_MENU_ITEMS = [
+      { path: '/', label: 'Trang chủ', icon: Home },
+      { path: '/products', label: 'Cửa hàng', icon: LayoutGrid },
+      { path: '/blog', label: 'Tin tức & Blog', icon: BookOpen }, // Blog is here
+      { path: '/order-lookup', label: 'Tra cứu đơn hàng', icon: PackageCheck },
+      { path: '/contact', label: 'Liên hệ hỗ trợ', icon: Phone },
+  ];
 
   return (
     <>
@@ -188,7 +202,16 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
           >
             
             {/* Logo Area */}
-            <div className="flex-shrink-0 flex items-center gap-6">
+            <div className="flex-shrink-0 flex items-center gap-2 lg:gap-6">
+              
+              {/* Mobile Menu Trigger */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="lg:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-95 transition-all"
+              >
+                <Menu size={24} />
+              </button>
+
               <div className="flex items-center gap-3">
                 <Link to="/" className="flex items-center gap-1 group">
                   <span className="font-extrabold text-xl lg:text-xl tracking-tight text-gray-900">
@@ -231,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
             {/* Smart Command Trigger (Desktop) */}
             <div className="flex-1 max-w-sm mx-auto hidden lg:block">
               <button 
-                onClick={() => setIsCommandOpen(true)}
+                onClick={() => setIsSearchOpen(true)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-xl text-sm transition-all duration-300 group
                   ${scrolled ? 'bg-gray-100/50 border-transparent hover:bg-white hover:border-gray-200' : 'bg-white border-gray-200 hover:border-primary/30 shadow-sm'}
                 `}
@@ -285,12 +308,6 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
               </button>
 
               {/* MOBILE ONLY ACTIONS */}
-              <button 
-                onClick={() => setIsCommandOpen(true)}
-                className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all"
-              >
-                 <Search size={22} />
-              </button>
               <button className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all">
                  <Bell size={22} />
               </button>
@@ -325,11 +342,89 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
         </div>
       </nav>
 
+      {/* --- MOBILE MENU DRAWER --- */}
+      <div 
+        className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}
+      >
+         {/* Backdrop */}
+         <div 
+            className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => setIsMobileMenuOpen(false)}
+         ></div>
+
+         {/* Drawer Panel */}
+         <div 
+            className={`absolute top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+         >
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+               <span className="font-extrabold text-xl tracking-tight text-gray-900">
+                  AIDAYNE<span className="text-primary">.com</span>
+               </span>
+               <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white rounded-full border border-gray-200 shadow-sm active:scale-95 transition-transform">
+                  <X size={20} className="text-gray-500" />
+               </button>
+            </div>
+
+            {/* Menu Links */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+               {MOBILE_MENU_ITEMS.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <Link 
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${active ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
+                        <span className={`text-base ${active ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
+                        {active && <ChevronRight size={18} className="ml-auto opacity-80" />}
+                    </Link>
+                  )
+               })}
+               
+               {/* Admin Link (Mobile) */}
+               <Link 
+                  to="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-4 p-4 rounded-2xl text-gray-700 hover:bg-gray-50 transition-all mt-4 border-t border-gray-100"
+               >
+                  <LayoutDashboard size={22} />
+                  <span className="font-medium">Quản trị viên</span>
+               </Link>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 bg-gray-50 border-t border-gray-100">
+               {user ? (
+                  <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                        {user.email?.charAt(0).toUpperCase()}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm truncate">{user.email}</div>
+                        <button onClick={handleLogout} className="text-xs text-red-500 font-bold hover:underline">Đăng xuất</button>
+                     </div>
+                  </div>
+               ) : (
+                  <Link 
+                     to="/login"
+                     onClick={() => setIsMobileMenuOpen(false)} 
+                     className="flex items-center justify-center gap-2 w-full py-3 bg-gray-900 text-white font-bold rounded-xl active:scale-95 transition-transform"
+                  >
+                     <User size={18} /> Đăng nhập / Đăng ký
+                  </Link>
+               )}
+            </div>
+         </div>
+      </div>
+
       {/* --- SMART COMMAND PALETTE (MODAL) --- */}
-      {isCommandOpen && (
+      {isSearchOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
            {/* Backdrop */}
-           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCommandOpen(false)}></div>
+           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsSearchOpen(false)}></div>
            
            {/* Modal Panel */}
            <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col animate-fade-in-up ring-1 ring-black/5">
@@ -347,7 +442,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                     className="flex-1 bg-transparent border-none text-xl font-medium text-gray-900 placeholder-gray-400 focus:ring-0 p-0"
                  />
                  <button 
-                    onClick={() => setIsCommandOpen(false)}
+                    onClick={() => setIsSearchOpen(false)}
                     className="px-2 py-1 bg-gray-200 rounded text-[10px] font-bold text-gray-500 uppercase tracking-wide hover:bg-gray-300 transition-colors"
                  >
                     Esc

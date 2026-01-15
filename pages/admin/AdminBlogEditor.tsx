@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Settings, Globe, Image as ImageIcon, User, Clock, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Globe, Image as ImageIcon, User, Clock, ChevronRight, X, Link as LinkIcon, Calendar } from 'lucide-react';
 import { TipTapEditor } from '../../components/editor/TipTapEditor';
 import { supabase } from '../../lib/supabase';
 import { BlogPost } from '../../types';
@@ -17,13 +17,14 @@ export const AdminBlogEditor: React.FC = () => {
   // Form State
   const [post, setPost] = useState<Partial<BlogPost>>({
     title: '',
+    slug: '',
     content: '',
     excerpt: '',
     category: 'Công nghệ AI',
     author: 'Admin',
     image: '',
     readTime: '5 phút',
-    date: new Date().toLocaleDateString('vi-VN'),
+    date: new Date().toISOString().split('T')[0], // Default YYYY-MM-DD for input type="date"
   });
 
   // Fetch Data if Editing
@@ -33,13 +34,31 @@ export const AdminBlogEditor: React.FC = () => {
         setLoading(true);
         const { data, error } = await supabase.from('blogs').select('*').eq('id', id).single();
         if (!error && data) {
-          setPost(data);
+          // Map DB snake_case to camelCase for state
+          let formattedDate = data.date;
+          if (data.date && data.date.includes('/')) {
+             const parts = data.date.split('/');
+             if (parts.length === 3) formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+          
+          setPost({ 
+              ...data, 
+              readTime: data.read_time || data.readTime || data.readtime || '5 phút', // Handle various DB column names
+              date: formattedDate 
+          });
         }
         setLoading(false);
       };
       fetchPost();
     }
   }, [id]);
+
+  // Auto-generate slug from title if slug is empty
+  useEffect(() => {
+      if (post.title && !post.slug && id === 'new') {
+          setPost(prev => ({ ...prev, slug: slugify(post.title || '') }));
+      }
+  }, [post.title]);
 
   const handleChange = (field: keyof BlogPost, value: string) => {
     setPost(prev => ({ ...prev, [field]: value }));
@@ -50,17 +69,24 @@ export const AdminBlogEditor: React.FC = () => {
     setSaving(true);
 
     try {
-      // Explicitly construct payload to avoid sending unwanted fields
+      // Format Date to DD/MM/YYYY for display consistency across app
+      let displayDate = post.date;
+      if (post.date && post.date.includes('-')) {
+          const [year, month, day] = post.date.split('-');
+          displayDate = `${day}/${month}/${year}`;
+      }
+
+      // Explicitly construct payload mapping to snake_case for better DB compatibility
       const payload = {
         title: post.title,
-        slug: slugify(post.title || ''),
+        slug: post.slug || slugify(post.title || ''),
         excerpt: post.excerpt,
         content: post.content || '',
         author: post.author,
         image: post.image,
         category: post.category,
-        readTime: post.readTime || '5 phút',
-        date: post.date || new Date().toLocaleDateString('vi-VN'),
+        read_time: post.readTime || '5 phút', // Using snake_case for DB column
+        date: displayDate,
       };
 
       if (id && id !== 'new') {
@@ -74,13 +100,34 @@ export const AdminBlogEditor: React.FC = () => {
       alert('Đã lưu bài viết thành công!');
       navigate('/admin/blog');
     } catch (error: any) {
-      console.error("Save error:", error);
-      let msg = 'Lỗi không xác định';
-      if (typeof error === 'string') msg = error;
-      else if (error?.message) msg = error.message;
-      else if (typeof error === 'object') msg = JSON.stringify(error);
+      console.error("Save error full object:", error);
       
-      alert('Lỗi khi lưu: ' + msg);
+      let errorMessage = 'Lỗi không xác định';
+      
+      if (typeof error === 'string') {
+          errorMessage = error;
+      } else if (error && typeof error === 'object') {
+          if (error.message) {
+              errorMessage = error.message;
+          } else if (error.error_description) {
+              errorMessage = error.error_description;
+          } else {
+              try {
+                  errorMessage = JSON.stringify(error);
+              } catch (e) {
+                  errorMessage = "Lỗi object không thể đọc được.";
+              }
+          }
+
+          // User Friendly Mapping
+          if (error.code === '42P01') {
+              errorMessage = 'Chưa tạo bảng "blogs" trong Database. Vui lòng chạy lệnh SQL.';
+          } else if (error.code === '42703') {
+              errorMessage = 'Sai tên cột trong Database. Code đang gửi "read_time", hãy kiểm tra bảng.';
+          }
+      }
+      
+      alert('Lỗi khi lưu: ' + errorMessage);
     } finally {
       setSaving(false);
     }
@@ -191,7 +238,7 @@ export const AdminBlogEditor: React.FC = () => {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[11px] text-gray-800 font-medium leading-none">AIDAYNE.com</span>
-                            <span className="text-[10px] text-gray-500 leading-none mt-0.5">blog › {slugify(post.title || 'bai-viet')}</span>
+                            <span className="text-[10px] text-gray-500 leading-none mt-0.5">blog › {post.slug || 'slug-bai-viet'}</span>
                         </div>
                     </div>
                     <div className="text-lg text-[#1a0dab] font-medium hover:underline truncate font-sans">
@@ -207,6 +254,22 @@ export const AdminBlogEditor: React.FC = () => {
 
               {/* Form Fields */}
               <div className="space-y-5">
+                 
+                 {/* SLUG Field (Added) */}
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Đường dẫn (Slug)</label>
+                    <div className="relative group">
+                       <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                       <input 
+                         type="text" 
+                         value={post.slug}
+                         onChange={(e) => handleChange('slug', slugify(e.target.value))}
+                         className="w-full pl-9 pr-3 py-3 bg-gray-50 border-none rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm text-gray-600"
+                         placeholder="tieu-de-bai-viet"
+                       />
+                    </div>
+                 </div>
+
                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả ngắn (Excerpt)</label>
                     <textarea 
@@ -282,6 +345,21 @@ export const AdminBlogEditor: React.FC = () => {
                        </div>
                     </div>
                  </div>
+
+                 {/* Date Picker */}
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Ngày đăng</label>
+                    <div className="relative group">
+                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                       <input 
+                          type="date"
+                          value={post.date} // Expects YYYY-MM-DD
+                          onChange={(e) => handleChange('date', e.target.value)}
+                          className="w-full pl-9 pr-3 py-3 bg-gray-50 border-none rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                       />
+                    </div>
+                 </div>
+
               </div>
 
            </div>
