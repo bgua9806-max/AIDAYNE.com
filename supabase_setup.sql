@@ -32,12 +32,12 @@ CREATE TABLE IF NOT EXISTS products (
   reviews jsonb
 );
 
--- 2. ORDERS TABLE (Fixed: Added email column)
+-- 2. ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   customer_name text,
-  email text, -- IMPORTANT: Fixed missing column
+  email text,
   phone text,
   note text,
   total numeric,
@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_method text,
   items jsonb -- Store cart items snapshot
 );
+
+-- SAFETY MIGRATION: Ensure columns exist if table was created previously without them
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS items jsonb;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS note text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method text;
 
 -- 3. BLOGS TABLE
 CREATE TABLE IF NOT EXISTS blogs (
@@ -129,34 +135,51 @@ ALTER TABLE hero_slides ENABLE ROW LEVEL SECURITY;
 -- Note: Replace 'true' with proper auth logic for production
 
 -- Products: Everyone can read, anyone can write (Demo Mode)
+DROP POLICY IF EXISTS "Public Read Products" ON products;
 CREATE POLICY "Public Read Products" ON products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Products" ON products;
 CREATE POLICY "Public Write Products" ON products FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Update Products" ON products;
 CREATE POLICY "Public Update Products" ON products FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Public Delete Products" ON products;
 CREATE POLICY "Public Delete Products" ON products FOR DELETE USING (true);
 
 -- Orders: Everyone can insert, Everyone can read (Demo Mode)
+DROP POLICY IF EXISTS "Public Insert Orders" ON orders;
 CREATE POLICY "Public Insert Orders" ON orders FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Read Orders" ON orders;
 CREATE POLICY "Public Read Orders" ON orders FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Update Orders" ON orders;
 CREATE POLICY "Public Update Orders" ON orders FOR UPDATE USING (true);
 
 -- Blogs
+DROP POLICY IF EXISTS "Public Read Blogs" ON blogs;
 CREATE POLICY "Public Read Blogs" ON blogs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Blogs" ON blogs;
 CREATE POLICY "Public Write Blogs" ON blogs FOR ALL USING (true);
 
 -- Customers
+DROP POLICY IF EXISTS "Public Read Customers" ON customers;
 CREATE POLICY "Public Read Customers" ON customers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Customers" ON customers;
 CREATE POLICY "Public Write Customers" ON customers FOR ALL USING (true);
 
 -- Flash Sales
+DROP POLICY IF EXISTS "Public Read Flash Sales" ON flash_sales;
 CREATE POLICY "Public Read Flash Sales" ON flash_sales FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Flash Sales" ON flash_sales;
 CREATE POLICY "Public Write Flash Sales" ON flash_sales FOR ALL USING (true);
 
 -- Promotions
+DROP POLICY IF EXISTS "Public Read Promotions" ON promotions;
 CREATE POLICY "Public Read Promotions" ON promotions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Promotions" ON promotions;
 CREATE POLICY "Public Write Promotions" ON promotions FOR ALL USING (true);
 
 -- Hero Slides
+DROP POLICY IF EXISTS "Public Read Hero" ON hero_slides;
 CREATE POLICY "Public Read Hero" ON hero_slides FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public Write Hero" ON hero_slides;
 CREATE POLICY "Public Write Hero" ON hero_slides FOR ALL USING (true);
 
 -- TRIGGER for User Creation
@@ -169,6 +192,8 @@ begin
 end;
 $$ language plpgsql security definer;
 
-create or replace trigger on_auth_user_created
+-- Drop trigger first to avoid error if it exists
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
