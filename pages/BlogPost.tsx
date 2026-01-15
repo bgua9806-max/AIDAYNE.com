@@ -76,7 +76,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                 .from('products')
                 .select('*')
                 .eq('category', targetCategory)
-                .limit(6); // Tăng giới hạn để hiển thị nhiều hơn trên mobile
+                .limit(6);
 
             if (!error && relatedDb && relatedDb.length > 0) {
                  productsToShow = relatedDb;
@@ -84,8 +84,8 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                  productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 6);
             }
 
-            // FILTER: Remove Canva Pro (ID 6) specifically from Blog recommendations
-            productsToShow = productsToShow.filter(p => String(p.id) !== '6');
+            // FILTER: Removed arbitrary filter for ID 6 to prevent empty lists
+            // productsToShow = productsToShow.filter(p => String(p.id) !== '6');
             
             const enhancedProducts = productsToShow.map(p => {
                 if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
@@ -111,14 +111,10 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [paramSlug]);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, productId: string) => {
-      // Thử tìm ảnh fallback từ constant nếu ảnh chính lỗi
-      const fallback = PRODUCTS.find(p => String(p.id) === String(productId));
-      if (fallback && fallback.image && e.currentTarget.src !== fallback.image) {
-          e.currentTarget.src = fallback.image;
-      } else {
-          e.currentTarget.src = 'https://placehold.co/400x400?text=No+Image';
-      }
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      // Force placeholder immediately on error to prevent broken icon
+      e.currentTarget.src = 'https://placehold.co/400x400?text=No+Image';
+      e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
   if (!post) {
@@ -235,7 +231,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                                 src={prod.image} 
                                 className="w-full h-full object-cover" 
                                 alt={prod.name} 
-                                onError={(e) => handleImageError(e, prod.id)}
+                                onError={handleImageError}
                              />
                              {prod.discount > 0 && (
                                  <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">-{prod.discount}%</span>
@@ -243,7 +239,9 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                          </div>
                          <h4 className="font-bold text-gray-900 text-sm line-clamp-2 mb-1 leading-tight h-9">{prod.name}</h4>
                          <div className="mt-auto pt-2 border-t border-gray-50 flex items-center justify-between">
-                             <span className="font-extrabold text-blue-600 text-sm">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(prod.price)}</span>
+                             <span className="font-extrabold text-blue-600 text-sm">
+                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(prod.price || 0)}
+                             </span>
                              <button 
                                 onClick={() => addToCart(prod)}
                                 className="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center active:scale-90 transition-transform"
@@ -331,13 +329,13 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                                         <img 
                                             src={p.image} 
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-                                            onError={(e) => handleImageError(e, p.id)}
+                                            onError={handleImageError}
                                         />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors">{p.name}</h4>
                                         <div className="text-blue-600 font-extrabold text-sm mt-1">
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price || 0)}
                                         </div>
                                     </div>
                                 </div>
