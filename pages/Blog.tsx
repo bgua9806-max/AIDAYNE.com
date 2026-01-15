@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
-import { Clock, ArrowRight, User, Sparkles } from 'lucide-react';
+import { Clock, ArrowRight, User, Sparkles, TrendingUp, ChevronRight, Search } from 'lucide-react';
 import { BlogPost } from '../types';
 import { supabase } from '../lib/supabase';
 import { BLOG_POSTS as FALLBACK_POSTS } from '../constants';
@@ -9,9 +9,20 @@ import { slugify } from '../lib/utils';
 
 const { Link } = ReactRouterDOM;
 
+const CATEGORIES = [
+  "All",
+  "Công nghệ AI",
+  "Thủ thuật",
+  "Review",
+  "Bảo mật",
+  "Tin tức",
+  "Design"
+];
+
 export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -23,9 +34,7 @@ export const Blog: React.FC = () => {
             // MERGE LOGIC: Nếu ảnh trong DB rỗng, lấy từ FALLBACK_POSTS
             const enhancedPosts = data.map((post: BlogPost) => {
                 if (!post.image || post.image.trim() === '') {
-                    // Tìm bài viết tương ứng trong file constants (so sánh ID dạng chuỗi)
                     const fallback = FALLBACK_POSTS.find(fp => String(fp.id) === String(post.id));
-                    // Nếu tìm thấy fallback thì dùng ảnh fallback, không thì dùng placeholder
                     return fallback 
                         ? { ...post, image: fallback.image } 
                         : { ...post, image: 'https://placehold.co/1200x600?text=No+Image' };
@@ -46,122 +55,175 @@ export const Blog: React.FC = () => {
     fetchPosts();
   }, []);
 
-  if (loading) return <div className="min-h-screen pt-32 text-center font-bold text-gray-500">Đang tải tin tức...</div>;
+  // Filter Logic
+  const filteredPosts = activeCategory === "All" 
+    ? posts 
+    : posts.filter(p => p.category === activeCategory);
 
-  const featuredPost = posts[0];
-  const regularPosts = posts.slice(1);
+  // Segmentation
+  const featuredPost = filteredPosts[0];
+  const trendingPosts = filteredPosts.slice(1, 6); // Next 5 posts
+  const recentPosts = filteredPosts.slice(6); // The rest
+
+  if (loading) return (
+    <div className="min-h-screen pt-32 flex flex-col items-center justify-center bg-gray-50">
+       <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
-    <main className="min-h-screen bg-[#F2F2F7] pt-28 pb-24">
+    <main className="min-h-screen bg-[#F9F9FB] pb-24">
       
-      {/* Blog Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 shadow-sm mb-4">
-            <Sparkles size={14} className="text-yellow-500 fill-yellow-500" />
-            <span className="text-xs font-bold uppercase tracking-wide text-gray-600">Newsroom</span>
+      {/* 1. Header & Search Placeholders (Visual balance) */}
+      <div className="pt-28 pb-4 px-5">
+        <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tighter">
+              Discover
+            </h1>
+            <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 active:scale-90 transition-transform">
+                <Search size={20} className="text-gray-600" />
+            </button>
         </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight">
-          Kiến thức & Công nghệ
-        </h1>
-        <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
-          Cập nhật xu hướng AI mới nhất, mẹo sử dụng phần mềm và các giải pháp tối ưu hóa công việc hàng ngày của bạn.
-        </p>
+        <p className="text-gray-500 font-medium text-sm">Insights for the modern creator.</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 2. Sticky Glass Category Header */}
+      <div className="sticky top-[72px] lg:top-[80px] z-30 bg-[#F9F9FB]/80 backdrop-blur-xl border-b border-gray-200/50 py-3 mb-6">
+         <div className="flex overflow-x-auto no-scrollbar px-5 gap-3 snap-x">
+            {CATEGORIES.map((cat) => (
+                <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`
+                        snap-start whitespace-nowrap px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-300
+                        ${activeCategory === cat 
+                            ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20 scale-105' 
+                            : 'bg-white text-gray-500 border border-gray-200/60 hover:border-gray-300'
+                        }
+                    `}
+                >
+                    {cat}
+                </button>
+            ))}
+         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto lg:px-8">
         
-        {/* Featured Post - Large Card */}
+        {/* 3. Immersive Hero Section (Vertical Card on Mobile) */}
         {featuredPost && (
-          <Link to={`/blog/${featuredPost.slug || slugify(featuredPost.title)}`} className="group block mb-16">
-            <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-soft border border-white/50 hover:shadow-2xl transition-all duration-500 grid grid-cols-1 md:grid-cols-2 relative z-10">
-              <div className="relative overflow-hidden aspect-[16/10] md:aspect-auto h-full">
-                <img 
-                  src={featuredPost.image || 'https://placehold.co/1200x600?text=No+Image'} 
-                  alt={featuredPost.title} 
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-              </div>
-              <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-white relative">
-                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                    <Sparkles size={120} />
-                </div>
-                <div className="flex items-center gap-3 mb-6 relative z-10">
-                    <span className="bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">
-                      Tiêu điểm
-                    </span>
-                    <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">
-                      {featuredPost.category}
-                    </span>
-                </div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-6 leading-[1.1] group-hover:text-primary transition-colors tracking-tight">
-                  {featuredPost.title}
-                </h2>
-                <p className="text-gray-500 mb-8 line-clamp-3 text-lg leading-relaxed font-medium">
-                  {featuredPost.excerpt}
-                </p>
-                <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200">
-                          <User size={18} />
-                      </div>
-                      <div>
-                          <div className="text-sm font-bold text-gray-900">{featuredPost.author}</div>
-                          <div className="text-xs text-gray-400 font-medium">{featuredPost.date}</div>
-                      </div>
+          <div className="px-5 lg:px-0 mb-10 lg:mb-16">
+             <Link to={`/blog/${featuredPost.slug || slugify(featuredPost.title)}`} className="group block relative">
+                <div className="relative w-full aspect-[4/5] lg:aspect-[21/9] rounded-[2rem] overflow-hidden shadow-2xl shadow-gray-900/10">
+                    <img 
+                        src={featuredPost.image} 
+                        alt={featuredPost.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90 lg:via-black/20"></div>
+                    
+                    {/* Content Overlay */}
+                    <div className="absolute bottom-0 left-0 p-6 lg:p-12 w-full">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white/90 text-[10px] font-bold uppercase tracking-widest mb-4 border border-white/10">
+                            <Sparkles size={10} /> Featured Story
+                        </div>
+                        <h2 className="text-2xl lg:text-5xl font-black text-white leading-tight mb-3 lg:mb-6 line-clamp-3">
+                            {featuredPost.title}
+                        </h2>
+                        <div className="flex items-center gap-3 text-white/80 text-xs lg:text-sm font-medium">
+                            <span>{featuredPost.author}</span>
+                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
+                            <span>{featuredPost.readTime} đọc</span>
+                        </div>
                     </div>
-                    <span className="flex items-center gap-2 text-primary font-bold text-sm bg-primary/5 px-4 py-2 rounded-full group-hover:bg-primary group-hover:text-white transition-all">
-                      Đọc tiếp <ArrowRight size={16} />
-                    </span>
                 </div>
-              </div>
-            </div>
-          </Link>
+             </Link>
+          </div>
         )}
 
-        {/* Regular Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {regularPosts.map((post) => (
-            <Link key={post.id} to={`/blog/${post.slug || slugify(post.title)}`} className="group flex flex-col bg-white rounded-[2rem] overflow-hidden shadow-sm border border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
-              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
-                <img 
-                  src={post.image || 'https://placehold.co/800x600?text=No+Image'} 
-                  alt={post.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                />
-                <div className="absolute top-4 left-4">
-                   <span className="bg-white/90 backdrop-blur-md text-gray-900 text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide">
-                      {post.category}
-                   </span>
+        {/* 4. "Trending Now" Horizontal Scroll */}
+        {trendingPosts.length > 0 && (
+            <div className="mb-10 lg:mb-16">
+                <div className="px-5 lg:px-0 mb-5 flex items-center justify-between">
+                    <h3 className="text-lg lg:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <TrendingUp size={18} className="text-red-500" /> Trending Now
+                    </h3>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Swipe <ChevronRight size={12} className="inline"/></span>
                 </div>
-              </div>
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-2 text-gray-400 text-xs font-bold mb-3 uppercase tracking-wide">
-                   <Clock size={12} />
-                   <span>{post.readTime} đọc</span>
+                
+                <div className="flex overflow-x-auto gap-4 px-5 pb-8 lg:px-0 snap-x snap-mandatory no-scrollbar">
+                    {trendingPosts.map((post) => (
+                        <Link 
+                            key={post.id} 
+                            to={`/blog/${post.slug || slugify(post.title)}`}
+                            className="snap-center flex-shrink-0 w-[240px] lg:w-[320px] group"
+                        >
+                            <div className="aspect-[3/4] rounded-3xl overflow-hidden mb-4 relative shadow-md">
+                                <img 
+                                    src={post.image} 
+                                    alt={post.title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-900">
+                                    {post.category}
+                                </div>
+                            </div>
+                            <h4 className="text-lg font-bold text-gray-900 leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                                {post.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 line-clamp-2">{post.excerpt}</p>
+                        </Link>
+                    ))}
                 </div>
-                {/* Title always bold as requested */}
-                <h3 className="text-xl font-extrabold text-gray-900 mb-3 leading-snug group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
-                  {post.title}
-                </h3>
-                <p className="text-gray-500 text-sm line-clamp-2 mb-6 leading-relaxed font-medium">
-                  {post.excerpt}
-                </p>
-                <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                           <User size={12} />
-                       </div>
-                       <span className="text-xs font-bold text-gray-600">{post.author}</span>
-                   </div>
-                   <span className="text-gray-300 group-hover:text-primary transition-colors">
-                       <ArrowRight size={20} />
-                   </span>
+            </div>
+        )}
+
+        {/* 5. Minimal List View (Recent) */}
+        {recentPosts.length > 0 && (
+            <div className="px-5 lg:px-0">
+                <div className="mb-6">
+                    <h3 className="text-lg lg:text-2xl font-bold text-gray-900">Latest Articles</h3>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                
+                <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-10 lg:space-y-0">
+                    {recentPosts.map((post) => (
+                        <Link 
+                            key={post.id} 
+                            to={`/blog/${post.slug || slugify(post.title)}`}
+                            className="group flex gap-4 items-start py-4 border-b border-gray-100 last:border-0 lg:border-0"
+                        >
+                            {/* Text Side (2/3) */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{post.category}</span>
+                                    <span className="text-[10px] text-gray-400">• {post.readTime}</span>
+                                </div>
+                                <h4 className="text-base lg:text-xl font-bold text-gray-900 leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                                    {post.title}
+                                </h4>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold overflow-hidden">
+                                        {post.author.charAt(0)}
+                                    </div>
+                                    <span>{post.author}</span>
+                                </div>
+                            </div>
+
+                            {/* Thumbnail Side (1/3) */}
+                            <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm group-hover:shadow-md transition-all">
+                                <img 
+                                    src={post.image} 
+                                    alt={post.title} 
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        )}
+
       </div>
     </main>
   );
