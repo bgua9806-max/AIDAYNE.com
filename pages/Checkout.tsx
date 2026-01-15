@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { CartItem } from '../types';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, ShieldCheck, CreditCard, QrCode, Lock, CheckCircle, Package } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, CreditCard, QrCode, Lock, CheckCircle, Package, Copy, Download } from 'lucide-react';
 
 const { useNavigate, Link } = ReactRouterDOM;
 
@@ -11,6 +11,14 @@ interface CheckoutProps {
   cart: CartItem[];
   clearCart: () => void;
 }
+
+// Cấu hình ngân hàng
+const BANK_INFO = {
+  BANK_ID: 'MB', // MBBank
+  ACCOUNT_NO: '808123456789',
+  ACCOUNT_NAME: 'NGUYEN TRONG HUU',
+  TEMPLATE: 'compact2' // Giao diện QR: compact, compact2, qr_only, print
+};
 
 export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
   const navigate = useNavigate();
@@ -24,6 +32,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [finalTotal, setFinalTotal] = useState(0); // Lưu tổng tiền để tạo QR
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -66,8 +75,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
 
       // 3. Success Handling
       setOrderId(data.id);
+      setFinalTotal(totalAmount); // Lưu lại tổng tiền trước khi clear cart
       setIsSuccess(true);
       clearCart();
+      window.scrollTo(0, 0);
       
     } catch (error: any) {
       alert('Có lỗi xảy ra khi tạo đơn hàng: ' + error.message);
@@ -75,26 +86,110 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Đã sao chép: ' + text);
+  };
+
   if (isSuccess) {
+    // Tạo nội dung chuyển khoản: ADN + 6 ký tự đầu của mã đơn
+    const transferContent = `ADN${orderId.slice(0, 6).toUpperCase()}`;
+    // Link tạo QR động từ VietQR
+    const qrUrl = `https://img.vietqr.io/image/${BANK_INFO.BANK_ID}-${BANK_INFO.ACCOUNT_NO}-${BANK_INFO.TEMPLATE}.png?amount=${finalTotal}&addInfo=${transferContent}&accountName=${encodeURIComponent(BANK_INFO.ACCOUNT_NAME)}`;
+
     return (
-      <main className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6 animate-fade-in-up">
-           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
-              <CheckCircle size={48} strokeWidth={3} />
-           </div>
-           <h1 className="text-3xl font-extrabold text-gray-900">Đặt hàng thành công!</h1>
-           <p className="text-gray-500 text-lg">
-             Cảm ơn bạn đã mua hàng. Mã đơn hàng của bạn là:
-           </p>
-           <div className="bg-gray-100 py-3 px-6 rounded-xl font-mono text-xl font-bold text-gray-900 inline-block border border-gray-200 border-dashed">
-              #{orderId.slice(0, 8).toUpperCase()}
-           </div>
-           <p className="text-sm text-gray-500">
-             Thông tin đơn hàng đã được gửi tới email <strong>{formData.email}</strong>.
-           </p>
+      <main className="min-h-screen bg-white flex items-center justify-center p-4 py-12">
+        <div className="max-w-xl w-full text-center space-y-8 animate-fade-in-up">
            
-           <div className="pt-8 space-y-3">
-              <Link to="/order-lookup" className="block w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:bg-primary-hover transition-all">
+           {paymentMethod === 'qr' ? (
+             <div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden">
+                <div className="bg-primary p-6 text-white">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle size={32} strokeWidth={3} />
+                    </div>
+                    <h1 className="text-2xl font-extrabold">Đặt hàng thành công!</h1>
+                    <p className="text-white/80 text-sm mt-2">Vui lòng quét mã bên dưới để hoàn tất thanh toán.</p>
+                </div>
+                
+                <div className="p-8">
+                    {/* QR Code Section */}
+                    <div className="relative group w-fit mx-auto">
+                        <img 
+                            src={qrUrl} 
+                            alt="VietQR Payment" 
+                            className="w-full max-w-[300px] mx-auto rounded-xl border-2 border-gray-100 shadow-sm"
+                        />
+                        <a 
+                            href={qrUrl} 
+                            download="payment-qr.png"
+                            className="absolute bottom-4 right-4 bg-white/90 p-2 rounded-lg text-gray-700 hover:text-primary shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Tải mã QR"
+                        >
+                            <Download size={20} />
+                        </a>
+                    </div>
+
+                    {/* Bank Details */}
+                    <div className="mt-8 space-y-4 text-left bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                            <span className="text-gray-500 text-sm">Ngân hàng</span>
+                            <span className="font-bold text-gray-900">MB BANK (Quân Đội)</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                            <span className="text-gray-500 text-sm">Chủ tài khoản</span>
+                            <span className="font-bold text-gray-900 uppercase">{BANK_INFO.ACCOUNT_NAME}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                            <span className="text-gray-500 text-sm">Số tài khoản</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-lg text-primary tracking-wider">{BANK_INFO.ACCOUNT_NO}</span>
+                                <button onClick={() => copyToClipboard(BANK_INFO.ACCOUNT_NO)} className="text-gray-400 hover:text-gray-900"><Copy size={14}/></button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                            <span className="text-gray-500 text-sm">Số tiền</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-lg text-red-600">
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalTotal)}
+                                </span>
+                                <button onClick={() => copyToClipboard(finalTotal.toString())} className="text-gray-400 hover:text-gray-900"><Copy size={14}/></button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 text-sm">Nội dung</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900 bg-yellow-100 px-2 py-1 rounded text-sm">{transferContent}</span>
+                                <button onClick={() => copyToClipboard(transferContent)} className="text-gray-400 hover:text-gray-900"><Copy size={14}/></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mt-6 italic">
+                        * Hệ thống sẽ tự động xác nhận đơn hàng sau 1-3 phút khi nhận được tiền.
+                    </p>
+                </div>
+             </div>
+           ) : (
+             // Standard Success View for other methods
+             <>
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                    <CheckCircle size={48} strokeWidth={3} />
+                </div>
+                <h1 className="text-3xl font-extrabold text-gray-900">Đặt hàng thành công!</h1>
+                <p className="text-gray-500 text-lg">
+                    Cảm ơn bạn đã mua hàng. Mã đơn hàng của bạn là:
+                </p>
+                <div className="bg-gray-100 py-3 px-6 rounded-xl font-mono text-xl font-bold text-gray-900 inline-block border border-gray-200 border-dashed">
+                    #{orderId.slice(0, 8).toUpperCase()}
+                </div>
+                <p className="text-sm text-gray-500">
+                    Thông tin đơn hàng đã được gửi tới email <strong>{formData.email}</strong>.
+                </p>
+             </>
+           )}
+           
+           <div className="pt-4 space-y-3 max-w-sm mx-auto">
+              <Link to="/order-lookup" className="block w-full py-4 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black transition-all">
                  Tra cứu đơn hàng
               </Link>
               <Link to="/" className="block w-full py-4 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-all">
@@ -194,12 +289,12 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                     {/* QR Code Banking */}
                     <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'qr' ? 'border-primary bg-blue-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
                        <input type="radio" name="payment" value="qr" checked={paymentMethod === 'qr'} onChange={(e) => setPaymentMethod(e.target.value)} className="w-5 h-5 accent-primary" />
-                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-gray-200 shadow-sm text-blue-600">
-                          <QrCode size={24} />
+                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-gray-200 shadow-sm text-blue-600 overflow-hidden">
+                          <img src="https://img.vietqr.io/image/MB-808123456789-compact.png" className="w-full h-full object-cover p-1" alt="VietQR" />
                        </div>
                        <div className="flex-1">
                           <div className="font-bold text-gray-900">Chuyển khoản Ngân hàng (VietQR)</div>
-                          <div className="text-xs text-gray-500">Tự động xác nhận sau 30 giây</div>
+                          <div className="text-xs text-gray-500">Tự động điền nội dung & số tiền</div>
                        </div>
                     </label>
 
