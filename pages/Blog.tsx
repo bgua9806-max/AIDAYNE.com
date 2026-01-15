@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
-import { Clock, ArrowRight, User, Sparkles, TrendingUp, ChevronRight, Search, Hash } from 'lucide-react';
+import { Clock, TrendingUp, ChevronRight, Search, Sparkles } from 'lucide-react';
 import { BlogPost } from '../types';
 import { supabase } from '../lib/supabase';
 import { BLOG_POSTS as FALLBACK_POSTS } from '../constants';
@@ -17,9 +17,13 @@ export const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+
     const fetchPosts = async () => {
       try {
         const { data, error } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
@@ -46,6 +50,7 @@ export const Blog: React.FC = () => {
       }
     };
     fetchPosts();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const filteredPosts = activeCategory === "All" 
@@ -56,34 +61,42 @@ export const Blog: React.FC = () => {
   const otherPosts = filteredPosts.slice(1);
 
   if (loading) return (
-    <div className="min-h-screen pt-32 flex flex-col items-center justify-center bg-gray-50">
+    <div className="min-h-screen pt-32 flex flex-col items-center justify-center bg-[#F5F5F7]">
        <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-[#F9F9FB]">
+    <main className="min-h-screen bg-[#F5F5F7]">
       
       {/* =========================================
-          MOBILE LAYOUT (Hiển thị < 1024px)
-          Thiết kế: Magazine Style, Vertical Scroll
+          MOBILE LAYOUT ( < 1024px )
+          Premium Magazine Style
          ========================================= */}
       <div className="lg:hidden pb-24">
         
-        {/* 1. Header Sticky */}
-        <div className="pt-20 px-5 pb-2 bg-white sticky top-0 z-30 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]">
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-3">Tạp chí công nghệ</h1>
-            {/* Horizontal Categories */}
-            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-3 -mx-5 px-5">
+        {/* 1. Ultra-Clean Sticky Header */}
+        <div className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-gray-200/50 pt-12 pb-2' : 'bg-transparent pt-14 pb-4'}`}>
+            <div className="px-5 flex items-center justify-between mb-4">
+                <h1 className={`text-3xl font-black text-gray-900 tracking-tighter transition-all origin-left ${isScrolled ? 'scale-75' : 'scale-100'}`}>
+                    Discover
+                </h1>
+                <div className="w-10 h-10 bg-white rounded-full shadow-sm border border-gray-100 flex items-center justify-center text-gray-600">
+                    <Search size={20} />
+                </div>
+            </div>
+
+            {/* Pills Categories */}
+            <div className="flex overflow-x-auto no-scrollbar gap-3 px-5 pb-2">
                 {CATEGORIES.map((cat) => (
                     <button
                         key={cat}
                         onClick={() => setActiveCategory(cat)}
                         className={`
-                            whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all border
+                            whitespace-nowrap px-5 py-2.5 rounded-full text-[13px] font-bold transition-all duration-300
                             ${activeCategory === cat 
-                                ? 'bg-black text-white border-black shadow-md' 
-                                : 'bg-white text-gray-500 border-gray-200'
+                                ? 'bg-black text-white shadow-lg shadow-black/20 scale-105' 
+                                : 'bg-white text-gray-500 border border-gray-100'
                             }
                         `}
                     >
@@ -93,89 +106,94 @@ export const Blog: React.FC = () => {
             </div>
         </div>
 
-        <div className="px-4 mt-6 space-y-8">
+        <div className="px-5 mt-4 space-y-10">
             
-            {/* 2. Hero Story Card (Full Vertical Image) */}
+            {/* 2. Hero Story Card (Vertical Immersive) */}
             {featuredPost && (
-                <Link to={`/blog/${featuredPost.slug || slugify(featuredPost.title)}`} className="block group relative w-full aspect-[3/4] rounded-[2rem] overflow-hidden shadow-xl">
+                <Link to={`/blog/${featuredPost.slug || slugify(featuredPost.title)}`} className="block group relative w-full aspect-[3/4] rounded-[2.5rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)]">
                     <img 
                         src={featuredPost.image} 
                         alt={featuredPost.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80"></div>
+                    {/* Gradient Mesh Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-90"></div>
                     
                     <div className="absolute bottom-0 left-0 p-6 w-full">
-                        <span className="inline-block px-2 py-1 bg-red-600 text-white text-[10px] font-black uppercase mb-3 rounded">
-                            Hot Story
-                        </span>
-                        <h2 className="text-2xl font-black text-white leading-tight mb-2 line-clamp-3">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-lg border border-white/10">
+                                <Sparkles size={10} className="text-yellow-400" /> Featured
+                            </span>
+                        </div>
+                        <h2 className="text-2xl font-black text-white leading-[1.2] mb-3 line-clamp-3">
                             {featuredPost.title}
                         </h2>
-                        <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
+                        <div className="flex items-center gap-2 text-white/80 text-xs font-medium">
                             <span>{featuredPost.author}</span>
-                            <span>•</span>
+                            <span className="w-1 h-1 rounded-full bg-white/50"></span>
                             <span>{featuredPost.readTime} đọc</span>
                         </div>
                     </div>
                 </Link>
             )}
 
-            {/* 3. Trending Carousel (Swipe Horizontal) */}
+            {/* 3. Trending (Horizontal Snap) */}
             <div>
-                <div className="flex items-center justify-between mb-4 px-1">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <TrendingUp size={18} className="text-blue-600" /> Xu hướng
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                        Trending <TrendingUp size={16} className="text-red-500" />
                     </h3>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Swipe</span>
                 </div>
-                <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 snap-x snap-mandatory no-scrollbar">
+                
+                <div className="flex overflow-x-auto gap-4 pb-4 -mx-5 px-5 snap-x snap-mandatory no-scrollbar">
                     {otherPosts.slice(0, 5).map((post) => (
                         <Link 
                             key={post.id} 
                             to={`/blog/${post.slug || slugify(post.title)}`}
-                            className="snap-center flex-shrink-0 w-[260px] bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 block"
+                            className="snap-center flex-shrink-0 w-[240px] group"
                         >
-                            <div className="h-32 w-full overflow-hidden relative">
-                                <img src={post.image} className="w-full h-full object-cover" />
-                                <span className="absolute top-2 right-2 bg-black/60 backdrop-blur text-white text-[9px] px-2 py-1 rounded-full font-bold">
+                            <div className="aspect-[4/5] rounded-[2rem] overflow-hidden mb-4 relative shadow-md">
+                                <img src={post.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wide">
                                     {post.category}
-                                </span>
+                                </div>
                             </div>
-                            <div className="p-4">
-                                <h4 className="font-bold text-gray-900 text-sm line-clamp-2 mb-2 leading-snug">
-                                    {post.title}
-                                </h4>
-                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">
-                                    {post.date}
-                                </span>
-                            </div>
+                            <h4 className="font-bold text-gray-900 text-base leading-snug line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">
+                                {post.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 line-clamp-1">{post.excerpt}</p>
                         </Link>
                     ))}
                 </div>
             </div>
 
-            {/* 4. Recent List (Minimal) */}
+            {/* 4. Latest Stories (Clean List) */}
             <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 px-1">Mới nhất</h3>
+                <h3 className="text-lg font-black text-gray-900 mb-6">Latest Stories</h3>
                 <div className="space-y-6">
                     {otherPosts.slice(5).map((post) => (
                         <Link 
                             key={post.id} 
                             to={`/blog/${post.slug || slugify(post.title)}`}
-                            className="flex gap-4 items-start pb-6 border-b border-gray-100 last:border-0"
+                            className="flex gap-5 items-start"
                         >
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="text-[10px] font-bold text-blue-600 uppercase">{post.category}</span>
+                            <div className="flex-1 min-w-0 py-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full">{post.category}</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{post.readTime}</span>
                                 </div>
-                                <h4 className="text-base font-bold text-gray-900 leading-snug mb-2 line-clamp-2">
+                                <h4 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 mb-2">
                                     {post.title}
                                 </h4>
-                                <div className="text-xs text-gray-400 flex items-center gap-1">
-                                    <Clock size={10} /> {post.readTime}
+                                <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-500">
+                                        {post.author.charAt(0)}
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-500">{post.author}</span>
                                 </div>
                             </div>
-                            <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
                                 <img src={post.image} className="w-full h-full object-cover" />
                             </div>
                         </Link>
@@ -187,8 +205,8 @@ export const Blog: React.FC = () => {
       </div>
 
       {/* =========================================
-          DESKTOP LAYOUT (Hiển thị >= 1024px)
-          Thiết kế: Standard Grid, Clean
+          DESKTOP LAYOUT ( >= 1024px )
+          Restored to Standard, Clean, Grid Layout
          ========================================= */}
       <div className="hidden lg:block pt-32 pb-24 max-w-7xl mx-auto px-8">
         

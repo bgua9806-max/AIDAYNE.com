@@ -4,13 +4,12 @@ import * as ReactRouterDOM from 'react-router-dom';
 import { PRODUCTS, BLOG_POSTS } from '../constants';
 import { Product, BlogPost as BlogPostType } from '../types';
 import { 
-  ArrowLeft, Clock, Calendar, Facebook, Twitter, 
-  Link as LinkIcon, ChevronRight, User, ShoppingCart, Zap, Star, Share2, Home, ArrowUp
+  ArrowLeft, Clock, Share2, Home, ArrowUp, Zap, ShoppingCart, User
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { ProductCard } from '../components/ProductCard';
 import { slugify } from '../lib/utils';
 import { SEO } from '../components/SEO';
+import { ProductCard } from '../components/ProductCard';
 
 const { useParams, Link, useNavigate } = ReactRouterDOM;
 
@@ -60,6 +59,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
             }
             setPost(enrichedPost);
             
+            // Logic gợi ý sản phẩm dựa trên category bài viết
             let productsToShow: Product[] = [];
             const mapCategory: {[key: string]: string} = {
                 'Công nghệ AI': 'ai',
@@ -76,12 +76,12 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                 .from('products')
                 .select('*')
                 .eq('category', targetCategory)
-                .limit(4);
+                .limit(6); // Tăng giới hạn để hiển thị nhiều hơn trên mobile
 
             if (!error && relatedDb && relatedDb.length > 0) {
                  productsToShow = relatedDb;
             } else {
-                 productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 4);
+                 productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 6);
             }
             
             const enhancedProducts = productsToShow.map(p => {
@@ -109,7 +109,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
   }, [paramSlug]);
 
   if (!post) {
-    return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium">Đang tải bài viết...</div>;
+    return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium bg-[#F5F5F7]">Đang tải bài viết...</div>;
   }
 
   const renderContent = (content: string) => {
@@ -138,45 +138,45 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
       {/* ==============================================================
           MOBILE LAYOUT ( < 1024px )
-          Focus: Immersive, Readable, Floating Actions
+          Premium Reading Experience + Product Integration
       ================================================================== */}
       <div className="lg:hidden pb-32">
          
          {/* 1. Progress Bar (Fixed Top) */}
          <div className="fixed top-0 left-0 h-1 z-[60] w-full bg-gray-100">
-            <div className="h-full bg-blue-600 transition-all duration-100" style={{ width: `${scrollProgress * 100}%` }}></div>
+            <div className="h-full bg-blue-600 transition-all duration-100 ease-out" style={{ width: `${scrollProgress * 100}%` }}></div>
          </div>
 
          {/* 2. Floating Header Actions */}
          <div className="fixed top-4 left-4 z-50">
-            <button onClick={() => navigate('/blog')} className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg border border-gray-100 text-gray-800 active:scale-90 transition-transform">
+            <button onClick={() => navigate('/blog')} className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-white/20 text-gray-800 active:scale-90 transition-transform">
                 <ArrowLeft size={20} />
             </button>
          </div>
 
          {/* 3. Immersive Header Image */}
-         <div className="relative w-full aspect-[4/3]">
+         <div className="relative w-full aspect-[3/4]">
             <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-90 h-24 bottom-0 top-auto"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-100 h-40 bottom-0 top-auto"></div>
          </div>
 
          {/* 4. Content Container */}
-         <article className="px-5 -mt-6 relative z-10">
+         <article className="px-6 -mt-10 relative z-10">
             {/* Meta */}
             <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-gray-600">
+                <span className="px-3 py-1 bg-gray-100/80 backdrop-blur rounded-full text-[10px] font-extrabold uppercase tracking-wider text-gray-600 shadow-sm">
                     {post.category}
                 </span>
-                <span className="text-gray-400 text-xs font-bold">• {post.readTime}</span>
+                <span className="text-gray-500 text-xs font-bold">• {post.readTime} read</span>
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl font-black text-gray-900 leading-[1.15] mb-6 tracking-tight">
+            <h1 className="text-[2rem] font-black text-gray-900 leading-[1.1] mb-6 tracking-tight">
                 {post.title}
             </h1>
 
             {/* Author */}
-            <div className="flex items-center gap-3 border-b border-gray-100 pb-6 mb-6">
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-6 mb-8">
                 <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
                     <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white font-bold">
                         {post.author.charAt(0)}
@@ -189,28 +189,67 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
             </div>
 
             {/* Sapo */}
-            <p className="text-lg font-medium text-gray-800 leading-relaxed mb-8 italic pl-4 border-l-4 border-blue-600">
+            <p className="text-xl font-medium text-gray-800 leading-relaxed mb-8 italic pl-5 border-l-4 border-blue-600">
                 {post.excerpt}
             </p>
 
-            {/* Main Body (Styled for Mobile) */}
-            <div className="prose prose-lg max-w-none prose-p:text-[1.125rem] prose-p:leading-8 prose-p:text-gray-700 prose-headings:font-bold prose-img:rounded-2xl prose-img:shadow-sm">
+            {/* Main Body */}
+            <div className="prose prose-lg max-w-none 
+                prose-p:text-[1.125rem] prose-p:leading-8 prose-p:text-gray-700 
+                prose-headings:font-bold prose-headings:text-gray-900
+                prose-img:rounded-3xl prose-img:shadow-lg prose-img:my-8
+                prose-a:text-blue-600 prose-a:font-bold prose-a:no-underline
+            ">
                 <div dangerouslySetInnerHTML={{ __html: post.content }} />
             </div>
          </article>
 
-         {/* 5. Sticky Bottom Action Bar */}
-         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-             <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-2xl rounded-full px-6 py-3 flex items-center gap-8">
-                <button onClick={() => {navigator.clipboard.writeText(window.location.href); alert('Đã sao chép link!')}} className="text-gray-500 hover:text-black">
+         {/* 5. Recommended Products Section (NEW) */}
+         <div className="mt-16 pt-10 pb-10 bg-[#F5F5F7] rounded-t-[2.5rem] relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+             <div className="px-6 mb-6 flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-white shadow-md">
+                    <Zap size={16} fill="currentColor" />
+                 </div>
+                 <h3 className="text-xl font-black text-gray-900">Gợi ý cho bạn</h3>
+             </div>
+             
+             {/* Horizontal Scroll Products */}
+             <div className="flex overflow-x-auto gap-4 px-6 pb-8 snap-x snap-mandatory no-scrollbar">
+                 {recommendedProducts.map((prod) => (
+                     <div key={prod.id} className="snap-center flex-shrink-0 w-[200px] bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col">
+                         <div className="aspect-square rounded-2xl bg-gray-50 mb-3 overflow-hidden relative">
+                             <img src={prod.image} className="w-full h-full object-cover" alt={prod.name} />
+                             {prod.discount > 0 && (
+                                 <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">-{prod.discount}%</span>
+                             )}
+                         </div>
+                         <h4 className="font-bold text-gray-900 text-sm line-clamp-2 mb-1 leading-tight h-9">{prod.name}</h4>
+                         <div className="mt-auto pt-2 border-t border-gray-50 flex items-center justify-between">
+                             <span className="font-extrabold text-blue-600 text-sm">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(prod.price)}</span>
+                             <button 
+                                onClick={() => addToCart(prod)}
+                                className="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center active:scale-90 transition-transform"
+                             >
+                                <ShoppingCart size={12} />
+                             </button>
+                         </div>
+                     </div>
+                 ))}
+             </div>
+         </div>
+
+         {/* 6. Sticky Bottom Action Bar */}
+         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full px-6 max-w-sm">
+             <div className="bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-2xl rounded-full px-6 py-3.5 flex items-center justify-between">
+                <button onClick={() => {navigator.clipboard.writeText(window.location.href); alert('Đã sao chép link!')}} className="flex flex-col items-center gap-1 text-gray-500 hover:text-black">
                     <Share2 size={20} />
                 </button>
-                <div className="w-px h-6 bg-gray-300"></div>
-                <button onClick={() => navigate('/')} className="text-gray-500 hover:text-blue-600">
-                    <Home size={20} />
-                </button>
-                <div className="w-px h-6 bg-gray-300"></div>
-                <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="text-gray-500 hover:text-black">
+                <div className="w-px h-6 bg-gray-200"></div>
+                <Link to="/" className="flex flex-col items-center gap-1 text-blue-600 hover:text-blue-700 bg-blue-50 p-2 rounded-full">
+                    <Home size={22} strokeWidth={2.5} />
+                </Link>
+                <div className="w-px h-6 bg-gray-200"></div>
+                <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex flex-col items-center gap-1 text-gray-500 hover:text-black">
                     <ArrowUp size={20} />
                 </button>
              </div>
