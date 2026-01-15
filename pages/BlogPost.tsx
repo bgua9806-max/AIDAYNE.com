@@ -108,6 +108,16 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [paramSlug]);
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, productId: string) => {
+      // Thử tìm ảnh fallback từ constant nếu ảnh chính lỗi
+      const fallback = PRODUCTS.find(p => String(p.id) === String(productId));
+      if (fallback && fallback.image && e.currentTarget.src !== fallback.image) {
+          e.currentTarget.src = fallback.image;
+      } else {
+          e.currentTarget.src = 'https://placehold.co/400x400?text=No+Image';
+      }
+  };
+
   if (!post) {
     return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium bg-[#F5F5F7]">Đang tải bài viết...</div>;
   }
@@ -156,7 +166,12 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
          {/* 3. Immersive Header Image */}
          <div className="relative w-full aspect-[3/4]">
-            <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
+            <img 
+                src={post.image} 
+                alt={post.title} 
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/1200x600?text=No+Cover' }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-100 h-40 bottom-0 top-auto"></div>
          </div>
 
@@ -218,7 +233,12 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                  {recommendedProducts.map((prod) => (
                      <div key={prod.id} className="snap-center flex-shrink-0 w-[200px] bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col">
                          <div className="aspect-square rounded-2xl bg-gray-50 mb-3 overflow-hidden relative">
-                             <img src={prod.image} className="w-full h-full object-cover" alt={prod.name} />
+                             <img 
+                                src={prod.image} 
+                                className="w-full h-full object-cover" 
+                                alt={prod.name} 
+                                onError={(e) => handleImageError(e, prod.id)}
+                             />
                              {prod.discount > 0 && (
                                  <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">-{prod.discount}%</span>
                              )}
@@ -284,7 +304,11 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                 </div>
 
                 <div className="w-full aspect-[21/9] rounded-3xl overflow-hidden mb-12 bg-gray-100">
-                    <img src={post.image} className="w-full h-full object-cover" />
+                    <img 
+                        src={post.image} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/1200x600?text=No+Cover' }}
+                    />
                 </div>
 
                 <div className="bg-white rounded-3xl p-0">
@@ -306,7 +330,11 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                             {recommendedProducts.map(p => (
                                 <div key={p.id} className="flex gap-4 items-start group cursor-pointer" onClick={() => navigate(`/product/${p.slug || slugify(p.name)}`)}>
                                     <div className="w-16 h-16 rounded-xl bg-white border border-gray-200 overflow-hidden flex-shrink-0">
-                                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                        <img 
+                                            src={p.image} 
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                                            onError={(e) => handleImageError(e, p.id)}
+                                        />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-gray-900 text-sm line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors">{p.name}</h4>
