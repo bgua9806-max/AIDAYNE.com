@@ -32,7 +32,7 @@ import { AdminCustomers } from './pages/admin/AdminCustomers';
 import { AdminHero } from './pages/admin/AdminHero';
 import { AdminReviews } from './pages/admin/AdminReviews';
 
-const { HashRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
+const { BrowserRouter: Router, Routes, Route, Navigate } = ReactRouterDOM;
 
 function AppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
