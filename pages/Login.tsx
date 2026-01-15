@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 const { Link, useNavigate } = ReactRouterDOM;
 
@@ -24,7 +25,21 @@ export const Login: React.FC = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  
   const navigate = useNavigate();
+  const { user } = useAuth(); // Hook auth để kiểm tra trạng thái đăng nhập
+
+  // --- QUAN TRỌNG: Tự động chuyển hướng nếu đã đăng nhập ---
+  useEffect(() => {
+    if (user) {
+      if (user.email?.includes('admin')) {
+         navigate('/admin/dashboard');
+      } else {
+         navigate('/');
+      }
+    }
+  }, [user, navigate]);
+  // --------------------------------------------------------
 
   const handleGoogleLogin = async () => {
     try {
@@ -33,7 +48,7 @@ export const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: window.location.origin, // Đảm bảo URL này khớp với Authorized Redirect URIs trên Google Console
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -59,12 +74,7 @@ export const Login: React.FC = () => {
           password,
         });
         if (error) throw error;
-        
-        if (email.includes('admin')) {
-           navigate('/admin/dashboard');
-        } else {
-           navigate('/');
-        }
+        // Việc chuyển hướng sẽ do useEffect ở trên xử lý khi 'user' thay đổi
       } else {
         const { error } = await supabase.auth.signUp({
           email,

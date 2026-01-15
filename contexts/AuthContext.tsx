@@ -53,17 +53,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        console.log("✅ [Auth] Initial session found:", session.user.email);
         // Check Admin
         setIsAdmin(session.user.email?.includes('admin') ?? false);
         // Fetch public profile
         fetchProfile(session.user.id);
+      } else {
+        console.log("ℹ️ [Auth] No initial session.");
       }
       
       setLoading(false);
     });
 
     // 2. Listen for Auth Changes (Login/Logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`🔔 [Auth] Auth event: ${event}`, session?.user?.email);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -86,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
     setUser(null);
     setSession(null);
+    setIsAdmin(false);
   };
 
   return (
