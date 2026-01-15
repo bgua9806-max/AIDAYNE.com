@@ -83,6 +83,9 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
             } else {
                  productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 6);
             }
+
+            // FILTER: Remove Canva Pro (ID 6) specifically from Blog recommendations
+            productsToShow = productsToShow.filter(p => String(p.id) !== '6');
             
             const enhancedProducts = productsToShow.map(p => {
                 if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {

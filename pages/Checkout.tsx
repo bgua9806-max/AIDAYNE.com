@@ -48,16 +48,30 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Tự động xóa khoảng trắng thừa khi người dùng nhập xong (blur)
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value.trim() }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
+      // Clean data before sending
+      const cleanData = {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          note: formData.note.trim()
+      };
+
       // 1. Create Order Payload
       const newOrder = {
-        customer_name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
+        customer_name: cleanData.name,
+        email: cleanData.email,
+        phone: cleanData.phone,
         total: totalAmount,
         status: 'pending', // Default status
         payment_method: paymentMethod === 'qr' ? 'Chuyển khoản QR' : paymentMethod === 'momo' ? 'Ví MoMo' : 'Thẻ quốc tế',
@@ -81,7 +95,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
       window.scrollTo(0, 0);
       
     } catch (error: any) {
-      alert('Có lỗi xảy ra khi tạo đơn hàng: ' + error.message);
+      alert('Có lỗi xảy ra khi tạo đơn hàng: ' + (error.message || 'Lỗi kết nối'));
       setIsProcessing(false);
     }
   };
@@ -234,6 +248,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                             required 
                             value={formData.name}
                             onChange={handleInputChange}
+                            onBlur={handleBlur}
                             placeholder="Nguyễn Văn A" 
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none" 
                           />
@@ -246,6 +261,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                             required 
                             value={formData.phone}
                             onChange={handleInputChange}
+                            onBlur={handleBlur}
                             placeholder="0912..." 
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none" 
                           />
@@ -262,6 +278,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                               autoComplete="email"
                               value={formData.email}
                               onChange={handleInputChange}
+                              onBlur={handleBlur}
                               placeholder="name@example.com" 
                               className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none" 
                             />
@@ -281,6 +298,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
                           rows={2}
                           value={formData.note}
                           onChange={handleInputChange}
+                          onBlur={handleBlur}
                           placeholder="Lời nhắn cho người bán..." 
                           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium outline-none resize-none" 
                         ></textarea>
