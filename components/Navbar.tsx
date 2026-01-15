@@ -319,10 +319,27 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart, isSearchO
                 )}
               </button>
 
-              {/* MOBILE ONLY ACTIONS */}
-              <button className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all">
-                 <Bell size={22} />
-              </button>
+              {/* MOBILE ACTIONS: Search & Cart (Added) */}
+              <div className="flex items-center gap-1 lg:hidden">
+                  <button 
+                    onClick={() => setIsSearchOpen(true)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-full active:scale-90 transition-all"
+                  >
+                     <Search size={22} />
+                  </button>
+                  
+                  <button 
+                    onClick={onOpenCart}
+                    className="relative p-2 text-gray-800 hover:text-primary rounded-full transition-all active:scale-90"
+                  >
+                    <ShoppingBag size={22} />
+                    {cartCount > 0 && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center w-3.5 h-3.5 text-[8px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+              </div>
             </div>
           </div>
         </div>
