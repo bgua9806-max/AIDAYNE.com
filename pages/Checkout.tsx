@@ -95,7 +95,16 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, clearCart }) => {
       window.scrollTo(0, 0);
       
     } catch (error: any) {
-      alert('Có lỗi xảy ra khi tạo đơn hàng: ' + (error.message || 'Lỗi kết nối'));
+      console.error("Lỗi thanh toán:", error);
+      
+      // Xử lý thông báo lỗi cụ thể cho người dùng/admin
+      let errorMessage = error.message || 'Lỗi kết nối';
+      
+      if (errorMessage.includes("Could not find the 'email' column")) {
+          alert(`LỖI HỆ THỐNG (DATABASE):\n\nBảng 'orders' trong Supabase chưa có cột 'email'.\n\nVui lòng vào Supabase SQL Editor và chạy lệnh sau:\nALTER TABLE orders ADD COLUMN IF NOT EXISTS email text;`);
+      } else {
+          alert('Có lỗi xảy ra khi tạo đơn hàng: ' + errorMessage);
+      }
       setIsProcessing(false);
     }
   };
