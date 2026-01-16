@@ -140,13 +140,42 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ addToCart }) => {
   const currentOriginalPrice = selectedVariant ? selectedVariant.originalPrice : product.originalPrice;
   const discountPercent = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
 
-  // JSON-LD for Product
+  // Helper for schema mapping
+  const getApplicationCategory = (cat: string) => {
+    const map: Record<string, string> = {
+      'design': 'DesignApplication',
+      'entertainment': 'MultimediaApplication',
+      'music': 'MultimediaApplication',
+      'work': 'BusinessApplication',
+      'security': 'SecurityApplication',
+      'education': 'EducationalApplication',
+      'game': 'GameApplication',
+      'ai': 'ApplicationSuite', // General fallback for AI
+      'cloud': 'UtilitiesApplication'
+    };
+    return map[cat] || 'SoftwareApplication';
+  };
+
+  const getOperatingSystem = () => {
+    if (product.platforms && product.platforms.length > 0) {
+      return product.platforms.join(', ');
+    }
+    // Fallback logic based on category
+    if (['design', 'work'].includes(product.category)) return 'Windows, macOS';
+    if (['entertainment', 'music', 'education'].includes(product.category)) return 'Windows, macOS, Android, iOS';
+    return 'Windows, macOS, Android, iOS';
+  };
+
+  // Enhanced JSON-LD for Software Application
   const productSchema = {
     "@context": "https://schema.org/",
-    "@type": "Product",
+    "@type": "SoftwareApplication",
     "name": product.name,
     "image": product.image,
     "description": product.description,
+    "applicationCategory": getApplicationCategory(product.category),
+    "operatingSystem": getOperatingSystem(),
+    "softwareVersion": product.version || "Latest",
     "brand": {
       "@type": "Brand",
       "name": product.developer || "AIDAYNE"

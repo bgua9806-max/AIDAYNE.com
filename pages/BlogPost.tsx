@@ -4,12 +4,11 @@ import * as ReactRouterDOM from 'react-router-dom';
 import { PRODUCTS, BLOG_POSTS } from '../constants';
 import { Product, BlogPost as BlogPostType } from '../types';
 import { 
-  ArrowLeft, Clock, Share2, Home, ArrowUp, Zap, ShoppingCart, User
+  ArrowLeft, Clock, Share2, Home, ArrowUp, Zap, ShoppingCart, User, Plus
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/utils';
 import { SEO } from '../components/SEO';
-import { ProductCard } from '../components/ProductCard';
 
 const { useParams, Link, useNavigate } = ReactRouterDOM;
 
@@ -17,11 +16,68 @@ interface BlogPostProps {
   addToCart: (product: Product) => void;
 }
 
+// Internal Widget Component
+const ProductWidget: React.FC<{ product: Product; addToCart: (p: Product) => void }> = ({ product, addToCart }) => {
+    return (
+        <div className="my-8 not-prose">
+            <div className="relative bg-white/70 backdrop-blur-md border border-white/60 shadow-lg rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-5 items-center transition-transform hover:scale-[1.01] hover:shadow-xl group overflow-hidden">
+                {/* Background Glow */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/20 transition-colors"></div>
+                
+                {/* Image */}
+                <div className="w-full sm:w-32 aspect-square sm:aspect-auto sm:h-32 rounded-xl overflow-hidden bg-white shadow-sm shrink-0 border border-gray-100 relative">
+                    <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400?text=No+Img' }} 
+                    />
+                    {product.discount > 0 && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                            -{product.discount}%
+                        </div>
+                    )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-full mb-2 inline-block">
+                        {product.category}
+                    </span>
+                    <h4 className="text-lg font-extrabold text-gray-900 leading-tight mb-2 line-clamp-2">
+                        {product.name}
+                    </h4>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-4 sm:mb-0">
+                        <span className="text-2xl font-black text-primary">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price)}
+                        </span>
+                        {product.originalPrice > product.price && (
+                            <span className="text-sm text-gray-400 line-through font-medium">
+                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.originalPrice)}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Button */}
+                <button 
+                    onClick={() => addToCart(product)}
+                    className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg shadow-gray-900/20 hover:bg-primary hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 shrink-0 active:scale-95"
+                >
+                    <ShoppingCart size={18} />
+                    <span>Mua ngay</span>
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
   const { id: paramSlug } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [widgetProducts, setWidgetProducts] = useState<Product[]>([]); // For shortcodes
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -48,54 +104,66 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
         }
         
         if (foundPost) {
+            // Enhance image fallback
             let enrichedPost = foundPost;
             if (!enrichedPost.image || enrichedPost.image.trim() === '') {
                  const fallback = BLOG_POSTS.find(p => String(p.id) === String(enrichedPost.id));
-                 if (fallback) {
-                    enrichedPost = { ...enrichedPost, image: fallback.image };
-                 } else {
-                    enrichedPost = { ...enrichedPost, image: 'https://placehold.co/1200x600?text=No+Cover+Image' };
-                 }
+                 enrichedPost = { 
+                     ...enrichedPost, 
+                     image: fallback?.image || 'https://placehold.co/1200x600?text=No+Cover+Image' 
+                 };
             }
             setPost(enrichedPost);
             
-            // Logic gợi ý sản phẩm dựa trên category bài viết
-            let productsToShow: Product[] = [];
+            // --- DATA FETCHING STRATEGY ---
+            // 1. Extract IDs from Shortcodes in Content
+            const shortcodeIds = [...(enrichedPost.content.matchAll(/\[\[PRODUCT:([a-zA-Z0-9-]+)\]\]/g) || [])].map(m => m[1]);
+            
+            // 2. Determine Category for Recommendations
             const mapCategory: {[key: string]: string} = {
-                'Công nghệ AI': 'ai',
-                'Thủ thuật': 'work',
-                'Đánh giá': 'entertainment',
-                'Bảo mật': 'security',
-                'Thiết kế': 'design',
-                'Tin tức': 'ai'
+                'Công nghệ AI': 'ai', 'Thủ thuật': 'work', 'Đánh giá': 'entertainment',
+                'Bảo mật': 'security', 'Thiết kế': 'design', 'Tin tức': 'ai'
             };
+            const targetCategory = mapCategory[enrichedPost.category] || 'work';
             
-            let targetCategory = mapCategory[enrichedPost.category] || 'work';
-            
-            const { data: relatedDb, error } = await supabase
+            // 3. Single Batch Query to Supabase
+            // We fetch BOTH recommended products (by category) AND specific products needed for widgets
+            const { data: productsDb, error } = await supabase
                 .from('products')
-                .select('*')
-                .eq('category', targetCategory)
-                .limit(6);
+                .select('*');
 
-            if (!error && relatedDb && relatedDb.length > 0) {
-                 productsToShow = relatedDb;
+            if (!error && productsDb) {
+                 // A. Filter for Recommendations (Limit 6, exclude current context if needed)
+                 const recs = productsDb
+                    .filter(p => p.category === targetCategory)
+                    .slice(0, 6);
+                 
+                 // B. Filter for Widgets (Match IDs found in shortcodes)
+                 // Support ID matching and basic Slug/Name matching for robustness
+                 const widgets = productsDb.filter(p => 
+                     shortcodeIds.includes(p.id) || 
+                     shortcodeIds.includes(slugify(p.name))
+                 );
+
+                 // Fallback image logic for all
+                 const enhanceProduct = (p: any) => {
+                     if (!p.image) {
+                         const fb = PRODUCTS.find(fp => String(fp.id) === String(p.id));
+                         return fb ? { ...p, image: fb.image } : { ...p, image: 'https://placehold.co/400x400?text=No+Image' };
+                     }
+                     return p;
+                 };
+
+                 setRecommendedProducts(recs.map(enhanceProduct));
+                 setWidgetProducts(widgets.map(enhanceProduct));
             } else {
-                 productsToShow = PRODUCTS.filter(p => p.isHot).slice(0, 6);
+                 // Fallback to hardcoded constants
+                 const recs = PRODUCTS.filter(p => p.category === targetCategory).slice(0, 6);
+                 setRecommendedProducts(recs);
+                 // Try to find widget products in constants
+                 const widgets = PRODUCTS.filter(p => shortcodeIds.includes(p.id));
+                 setWidgetProducts(widgets);
             }
-
-            // FILTER: Removed arbitrary filter for ID 6 to prevent empty lists
-            // productsToShow = productsToShow.filter(p => String(p.id) !== '6');
-            
-            const enhancedProducts = productsToShow.map(p => {
-                if (!p.image || (typeof p.image === 'string' && p.image.trim() === '')) {
-                     const fallback = PRODUCTS.find(fp => String(fp.id) === String(p.id));
-                     return fallback ? { ...p, image: fallback.image } : { ...p, image: 'https://placehold.co/400x400?text=No+Image' };
-                }
-                return p;
-            });
-
-            setRecommendedProducts(enhancedProducts);
         }
     };
     fetchPostAndRecommendations();
@@ -112,24 +180,49 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
   }, [paramSlug]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-      // Force placeholder immediately on error to prevent broken icon
       e.currentTarget.src = 'https://placehold.co/400x400?text=No+Image';
-      e.currentTarget.onerror = null; // Prevent infinite loop
+      e.currentTarget.onerror = null;
+  };
+
+  // --- CONTENT RENDERING ENGINE ---
+  const renderEnhancedContent = (content: string) => {
+    if (!content) return null;
+
+    // Split content by shortcode regex
+    // Example: [[PRODUCT:123]] captures '123'
+    const regex = /\[\[PRODUCT:([a-zA-Z0-9-]+)\]\]/g;
+    const parts = content.split(regex); 
+    
+    // If no shortcodes, return dangerouslySetInnerHTML as usual
+    if (parts.length === 1) {
+        return <div dangerouslySetInnerHTML={{ __html: content }} />;
+    }
+
+    return (
+      <div>
+        {parts.map((part, index) => {
+           // Odd indices are captured groups (IDs), Even indices are text/HTML chunks
+           if (index % 2 === 1) {
+               const productId = part;
+               const product = widgetProducts.find(p => p.id === productId || slugify(p.name) === productId) || 
+                               recommendedProducts.find(p => p.id === productId); // Fallback to recs if lucky
+               
+               if (product) {
+                   return <ProductWidget key={`widget-${index}`} product={product} addToCart={addToCart} />;
+               }
+               return null; // ID not found, render nothing
+           }
+           
+           // Render HTML chunk
+           return <span key={index} dangerouslySetInnerHTML={{ __html: part }} />;
+        })}
+      </div>
+    );
   };
 
   if (!post) {
     return <div className="min-h-screen pt-32 text-center text-gray-500 font-medium bg-[#F5F5F7]">Đang tải bài viết...</div>;
   }
-
-  const renderContent = (content: string) => {
-    if (!content) return null;
-    return (
-        <div 
-            className="blog-content prose prose-lg prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-blue-600 max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }} 
-        />
-    );
-  };
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -162,8 +255,6 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
          <div className="fixed top-0 left-0 h-1 z-[60] w-full bg-gray-100">
             <div className="h-full bg-blue-600 transition-all duration-100 ease-out" style={{ width: `${scrollProgress * 100}%` }}></div>
          </div>
-
-         {/* 2. Floating Header Actions - REMOVED AS REQUESTED */}
 
          {/* 3. Immersive Header Image */}
          <div className="relative w-full aspect-[3/4]">
@@ -209,18 +300,18 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                 {post.excerpt}
             </p>
 
-            {/* Main Body */}
+            {/* Main Body with Widgets */}
             <div className="prose prose-lg max-w-none 
                 prose-p:text-[1.125rem] prose-p:leading-8 prose-p:text-gray-700 
                 prose-headings:font-bold prose-headings:text-gray-900
                 prose-img:rounded-3xl prose-img:shadow-lg prose-img:my-8
                 prose-a:text-blue-600 prose-a:font-bold prose-a:no-underline
             ">
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                {renderEnhancedContent(post.content)}
             </div>
          </article>
 
-         {/* 5. Recommended Products Section (NEW) */}
+         {/* 5. Recommended Products Section */}
          <div className="mt-16 pt-10 pb-10 bg-[#F5F5F7] rounded-t-[2.5rem] relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
              <div className="px-6 mb-6 flex items-center gap-2">
                  <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-white shadow-md">
@@ -281,7 +372,6 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
 
       {/* ==============================================================
           DESKTOP LAYOUT ( >= 1024px )
-          Restored to Standard, Clean, Grid Layout
       ================================================================== */}
       <div className="hidden lg:block pt-32 pb-20 max-w-7xl mx-auto px-8">
          <div className="grid grid-cols-12 gap-12">
@@ -318,7 +408,11 @@ export const BlogPost: React.FC<BlogPostProps> = ({ addToCart }) => {
                     <p className="text-xl text-gray-600 leading-relaxed font-medium mb-10 border-l-4 border-blue-500 pl-6 py-1">
                         {post.excerpt}
                     </p>
-                    {renderContent(post.content)}
+                    
+                    {/* Render Content with Widgets */}
+                    <div className="prose prose-xl prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-blue-600 max-w-none">
+                        {renderEnhancedContent(post.content)}
+                    </div>
                 </div>
             </div>
 
